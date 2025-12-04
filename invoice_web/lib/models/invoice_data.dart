@@ -108,6 +108,8 @@ class BenchmarkResult {
   final double totalTime;
   final double averageTime;
   final List<ProcessingResult> results;
+  final Map<String, dynamic>? costAnalysis;  // Server-side calculated
+  final List<dynamic>? masterList;  // Server-side aggregated
   final Map<String, String>? downloads;
 
   BenchmarkResult({
@@ -117,6 +119,8 @@ class BenchmarkResult {
     required this.totalTime,
     required this.averageTime,
     required this.results,
+    this.costAnalysis,
+    this.masterList,
     this.downloads,
   });
 
@@ -131,6 +135,8 @@ class BenchmarkResult {
               ?.map((r) => ProcessingResult.fromJson(r))
               .toList() ??
           [],
+      costAnalysis: json['cost_analysis'],
+      masterList: json['master_list'],
       downloads: json['downloads'] != null
           ? Map<String, String>.from(json['downloads'])
           : null,

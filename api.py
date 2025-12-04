@@ -12,6 +12,7 @@ from datetime import datetime
 from invoice_processor import InvoiceProcessor
 from benchmark import InvoiceBenchmark
 from csv_exporter import CSVExporter
+from cost_analyzer import CostAnalyzer
 from models import ProcessingResult, BenchmarkResult
 from config import settings
 
@@ -143,12 +144,18 @@ async def process_batch_invoices(files: List[UploadFile] = File(...)):
         successful = sum(1 for r in results if r.success)
         total_time = sum(r.processing_time for r in results)
         
+        # Calculate cost savings analysis (server-side)
+        cost_analysis = CostAnalyzer.calculate_savings_analysis(results)
+        master_list = CostAnalyzer.get_master_list(results)
+        
         return {
             "total_files": len(results),
             "successful": successful,
             "failed": len(results) - successful,
             "total_time": total_time,
             "results": [r.model_dump() for r in results],
+            "cost_analysis": cost_analysis,
+            "master_list": master_list,
             "downloads": {
                 "items_csv": f"/api/download/items/{Path(csv_files['items_csv']).name}",
                 "summary_csv": f"/api/download/summary/{Path(csv_files['summary_csv']).name}"

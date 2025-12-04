@@ -5,8 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../services/api_service.dart';
 import '../models/invoice_data.dart';
 import '../widgets/invoice_result_card.dart';
-import '../widgets/summary_table.dart';
-import '../widgets/top_overpay_chart.dart';
+import '../widgets/price_comparison_chart.dart';
 import '../widgets/contact_supplier_cta.dart';
 
 class UploadPage extends StatefulWidget {
@@ -20,6 +19,8 @@ class _UploadPageState extends State<UploadPage> {
   List<PlatformFile>? _selectedFiles;
   bool _isProcessing = false;
   BenchmarkResult? _result;
+  Map<String, dynamic>? _costAnalysis;
+  List<dynamic>? _masterList;
   String? _error;
 
   Future<void> _pickFiles() async {
@@ -57,10 +58,13 @@ class _UploadPageState extends State<UploadPage> {
 
     try {
       final apiService = context.read<ApiService>();
-      final result = await apiService.processBatchInvoices(_selectedFiles!);
+      final response = await apiService.processBatchInvoices(_selectedFiles!);
 
       setState(() {
-        _result = result;
+        _result = response;
+        // Extract server-side calculated data
+        _costAnalysis = response.costAnalysis;
+        _masterList = response.masterList;
         _isProcessing = false;
       });
     } catch (e) {
@@ -221,48 +225,52 @@ class _UploadPageState extends State<UploadPage> {
             const SizedBox(height: 24),
             _buildDownloadButtons(),
             
-            const SizedBox(height: 40),
-            const Divider(thickness: 2),
-            const SizedBox(height: 24),
-            
-            // Header for analysis section
-            Row(
-              children: [
-                Icon(Icons.analytics, size: 32, color: Colors.blue.shade700),
-                const SizedBox(width: 12),
-                const Text(
-                  'Cost Savings Analysis',
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
+            // Only show analysis if we have data from server
+            if (_costAnalysis != null) ...[
+              const SizedBox(height: 40),
+              const Divider(thickness: 2),
+              const SizedBox(height: 24),
+              
+              // Header for analysis section
+              Row(
+                children: [
+                  Icon(Icons.analytics, size: 32, color: Colors.blue.shade700),
+                  const SizedBox(width: 12),
+                  const Text(
+                    'Cost Savings Analysis',
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Discover opportunities to reduce costs and optimize your spending',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey[600],
+                ],
               ),
-            ),
-            const SizedBox(height: 32),
-            
-            // 1. Top 3 Overpay Items Chart
-            TopOverpayChart(results: _result!.results),
-            
-            const SizedBox(height: 32),
-            
-            // 2. Contact Supplier CTA (Blurred)
-            ContactSupplierCTA(
-              potentialSavings: _calculateTotalSavings(),
-            ),
-            
-            const SizedBox(height: 32),
-            
-            // 3. Master List of Items (Summary Table)
-            SummaryTable(results: _result!.results),
+              const SizedBox(height: 8),
+              Text(
+                'Group buying opportunity - Save money on your purchases',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.grey[600],
+                ),
+              ),
+              const SizedBox(height: 32),
+              
+              // 1. Price Comparison Chart (Current vs Market Price)
+              PriceComparisonChart(costAnalysis: _costAnalysis!),
+              
+              const SizedBox(height: 32),
+              
+              // 2. Contact Supplier CTA (Blurred)
+              ContactSupplierCTA(
+                potentialSavings: (_costAnalysis!['total_savings'] ?? 0).toDouble(),
+              ),
+              
+              const SizedBox(height: 32),
+              
+              // 3. Master List of Items
+              if (_masterList != null)
+                _buildMasterList(),
+            ],
             
             const SizedBox(height: 32),
             
@@ -440,35 +448,78 @@ class _UploadPageState extends State<UploadPage> {
     );
   }
 
-  double _calculateTotalSavings() {
-    final Map<String, double> itemCosts = {};
-    
-    // Calculate total cost per item
-    for (var result in _result!.results) {
-      if (result.success && result.invoiceData != null) {
-        for (var item in result.invoiceData!.items) {
-          final key = item.description.trim().toLowerCase();
-          if (item.total != null) {
-            itemCosts[key] = (itemCosts[key] ?? 0) + item.total!;
-          }
-        }
-      }
-    }
-    
-    // Get top 3 items by cost
-    final sortedItems = itemCosts.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
-    
-    final top3 = sortedItems.take(3);
-    
-    // Calculate savings (random 3-9% for each)
-    double totalSavings = 0;
-    for (var item in top3) {
-      final savingPercent = 3.0 + (item.value % 6); // Pseudo-random 3-9%
-      totalSavings += item.value * (savingPercent / 100);
-    }
-    
-    return totalSavings;
+  Widget _buildMasterList() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.list, size: 28),
+                const SizedBox(width: 12),
+                const Text(
+                  'Master List - All Items',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  '${_masterList!.length} unique items',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: DataTable(
+                columnSpacing: 32,
+                headingRowColor: MaterialStateProperty.all(Colors.blue.shade50),
+                columns: const [
+                  DataColumn(label: Text('Item', style: TextStyle(fontWeight: FontWeight.bold))),
+                  DataColumn(label: Text('Quantity', style: TextStyle(fontWeight: FontWeight.bold)), numeric: true),
+                  DataColumn(label: Text('Unit', style: TextStyle(fontWeight: FontWeight.bold))),
+                  DataColumn(label: Text('Price Range', style: TextStyle(fontWeight: FontWeight.bold))),
+                  DataColumn(label: Text('Count', style: TextStyle(fontWeight: FontWeight.bold)), numeric: true),
+                ],
+                rows: _masterList!.map((item) {
+                  final priceMin = item['price_min'];
+                  final priceMax = item['price_max'];
+                  String priceRange = '-';
+                  if (priceMin != null && priceMax != null) {
+                    if (priceMin == priceMax) {
+                      priceRange = priceMin.toStringAsFixed(2);
+                    } else {
+                      priceRange = '[${priceMin.toStringAsFixed(2)}, ${priceMax.toStringAsFixed(2)}]';
+                    }
+                  }
+                  
+                  return DataRow(cells: [
+                    DataCell(
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 300),
+                        child: Text(item['description'] ?? ''),
+                      ),
+                    ),
+                    DataCell(Text((item['total_quantity'] ?? 0).toStringAsFixed(1))),
+                    DataCell(Text(item['unit'] ?? '-')),
+                    DataCell(Text(priceRange)),
+                    DataCell(Text('${item['occurrences']}')),
+                  ]);
+                }).toList(),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _buildResultsList() {
