@@ -6,6 +6,8 @@ import '../services/api_service.dart';
 import '../models/invoice_data.dart';
 import '../widgets/invoice_result_card.dart';
 import '../widgets/summary_table.dart';
+import '../widgets/top_overpay_chart.dart';
+import '../widgets/contact_supplier_cta.dart';
 
 class UploadPage extends StatefulWidget {
   const UploadPage({super.key});
@@ -218,10 +220,52 @@ class _UploadPageState extends State<UploadPage> {
             _buildResultsSummary(),
             const SizedBox(height: 24),
             _buildDownloadButtons(),
+            
+            const SizedBox(height: 40),
+            const Divider(thickness: 2),
+            const SizedBox(height: 24),
+            
+            // Header for analysis section
+            Row(
+              children: [
+                Icon(Icons.analytics, size: 32, color: Colors.blue.shade700),
+                const SizedBox(width: 12),
+                const Text(
+                  'Cost Savings Analysis',
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Discover opportunities to reduce costs and optimize your spending',
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey[600],
+              ),
+            ),
             const SizedBox(height: 32),
-            // Summary Table - Main Focus
+            
+            // 1. Top 3 Overpay Items Chart
+            TopOverpayChart(results: _result!.results),
+            
+            const SizedBox(height: 32),
+            
+            // 2. Contact Supplier CTA (Blurred)
+            ContactSupplierCTA(
+              potentialSavings: _calculateTotalSavings(),
+            ),
+            
+            const SizedBox(height: 32),
+            
+            // 3. Master List of Items (Summary Table)
             SummaryTable(results: _result!.results),
+            
             const SizedBox(height: 32),
+            
             // Optional: Individual results in expandable section
             ExpansionTile(
               title: const Text(
@@ -394,6 +438,37 @@ class _UploadPageState extends State<UploadPage> {
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       ),
     );
+  }
+
+  double _calculateTotalSavings() {
+    final Map<String, double> itemCosts = {};
+    
+    // Calculate total cost per item
+    for (var result in _result!.results) {
+      if (result.success && result.invoiceData != null) {
+        for (var item in result.invoiceData!.items) {
+          final key = item.description.trim().toLowerCase();
+          if (item.total != null) {
+            itemCosts[key] = (itemCosts[key] ?? 0) + item.total!;
+          }
+        }
+      }
+    }
+    
+    // Get top 3 items by cost
+    final sortedItems = itemCosts.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    
+    final top3 = sortedItems.take(3);
+    
+    // Calculate savings (random 3-9% for each)
+    double totalSavings = 0;
+    for (var item in top3) {
+      final savingPercent = 3.0 + (item.value % 6); // Pseudo-random 3-9%
+      totalSavings += item.value * (savingPercent / 100);
+    }
+    
+    return totalSavings;
   }
 
   Widget _buildResultsList() {
