@@ -13,7 +13,7 @@ class CostAnalyzer:
         Calculate top 3 overpaying items with current vs market price comparison.
         
         Market price = Current price with random 3-7% discount
-        All logic is server-side.
+        IMPORTANT: Costs are TOTAL across ALL occurrences (multiplied by count)
         """
         # Group items by name and calculate total costs
         item_costs = {}
@@ -29,15 +29,20 @@ class CostAnalyzer:
                         item_details[key] = {
                             'original_name': item.description,
                             'unit': item.unit,
-                            'occurrences': 0
+                            'occurrences': 0,
+                            'total_quantity': 0
                         }
                     
+                    # Sum up total cost across ALL occurrences
                     if item.total:
                         item_costs[key] += item.total
                     
+                    if item.quantity:
+                        item_details[key]['total_quantity'] += item.quantity
+                    
                     item_details[key]['occurrences'] += 1
         
-        # Sort by cost and get top 3
+        # Sort by TOTAL COST (already accounts for occurrences) and get top 3
         sorted_items = sorted(item_costs.items(), key=lambda x: x[1], reverse=True)
         top_3 = sorted_items[:3]
         
@@ -45,22 +50,28 @@ class CostAnalyzer:
         top_items = []
         total_savings = 0
         
-        for key, current_price in top_3:
+        for key, total_current_cost in top_3:
+            details = item_details[key]
+            
             # Random discount between 3% and 7%
             discount_percent = random.uniform(3.0, 7.0)
-            market_price = current_price * (1 - discount_percent / 100)
-            saving_amount = current_price - market_price
-            total_savings += saving_amount
             
-            details = item_details[key]
+            # Apply discount to TOTAL cost (already includes all occurrences)
+            total_market_cost = total_current_cost * (1 - discount_percent / 100)
+            total_saving = total_current_cost - total_market_cost
+            
+            # Accumulate total savings
+            total_savings += total_saving
+            
             top_items.append({
                 'name': details['original_name'],
-                'current_price': round(current_price, 2),
-                'market_price': round(market_price, 2),
-                'saving_amount': round(saving_amount, 2),
+                'current_price': round(total_current_cost, 2),  # TOTAL across all occurrences
+                'market_price': round(total_market_cost, 2),     # TOTAL across all occurrences
+                'saving_amount': round(total_saving, 2),         # TOTAL saving across all occurrences
                 'discount_percent': round(discount_percent, 2),
                 'unit': details['unit'],
-                'occurrences': details['occurrences']
+                'occurrences': details['occurrences'],
+                'total_quantity': round(details['total_quantity'], 2)
             })
         
         return {
