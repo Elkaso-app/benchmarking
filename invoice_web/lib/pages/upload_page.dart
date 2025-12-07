@@ -5,8 +5,8 @@ import 'package:url_launcher/url_launcher.dart';
 import '../services/api_service.dart';
 import '../models/invoice_data.dart';
 import '../widgets/invoice_result_card.dart';
-import '../widgets/price_comparison_chart.dart';
-import '../widgets/contact_supplier_cta.dart';
+import '../widgets/line_price_chart.dart';
+import '../widgets/blurred_suppliers_list.dart';
 
 class UploadPage extends StatefulWidget {
   const UploadPage({super.key});
@@ -255,15 +255,13 @@ class _UploadPageState extends State<UploadPage> {
               ),
               const SizedBox(height: 32),
               
-              // 1. Price Comparison Chart (Current vs Market Price)
-              PriceComparisonChart(costAnalysis: _costAnalysis!),
+              // 1. Line Chart - Price Comparison (Current vs Market Price)
+              LinePriceChart(costAnalysis: _costAnalysis!),
               
               const SizedBox(height: 32),
               
-              // 2. Contact Supplier CTA (Blurred)
-              ContactSupplierCTA(
-                potentialSavings: (_costAnalysis!['total_savings'] ?? 0).toDouble(),
-              ),
+              // 2. Blurred Suppliers List
+              BlurredSuppliersList(itemsList: _masterList),
               
               const SizedBox(height: 32),
               

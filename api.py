@@ -1,5 +1,5 @@
 """FastAPI REST API for invoice processing."""
-from fastapi import FastAPI, File, UploadFile, HTTPException, BackgroundTasks
+from fastapi import FastAPI, File, UploadFile, HTTPException, BackgroundTasks, Request
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pathlib import Path
@@ -8,6 +8,8 @@ import tempfile
 import shutil
 import uuid
 from datetime import datetime
+import requests
+import json
 
 from invoice_processor import InvoiceProcessor
 from benchmark import InvoiceBenchmark
@@ -270,6 +272,125 @@ async def list_outputs():
         "json_files": json_files,
         "directory": str(output_path)
     }
+
+
+@app.post("/api/contact_request")
+async def submit_contact_request(request: Request):
+    """Submit contact request and send to Slack webhook.
+    
+    Args:
+        request: Request containing email, phone, and items list
+        
+    Returns:
+        Success/failure response
+    """
+    try:
+        data = await request.json()
+        email = data.get('email', '')
+        phone = data.get('phone', '')
+        items = data.get('items', [])
+        timestamp = data.get('timestamp', datetime.now().isoformat())
+        
+        # Slack webhook URL
+        slack_webhook_url = "https://hooks.slack.com/services/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"
+        
+        # Format message for Slack
+        contact_info = []
+        if email:
+            contact_info.append(f"📧 Email: {email}")
+        if phone:
+            contact_info.append(f"📱 Phone: {phone}")
+        
+        contact_text = "\n".join(contact_info)
+        
+        # Create a formatted items summary
+        items_summary = ""
+        if items:
+            items_summary = f"\n\n📦 *Items Summary ({len(items)} items):*\n"
+            for idx, item in enumerate(items[:10], 1):  # Show first 10 items
+                item_name = item.get('description', 'Unknown')
+                quantity = item.get('total_quantity', 0)
+                unit = item.get('unit', '')
+                price_min = item.get('price_min', 0)
+                price_max = item.get('price_max', 0)
+                
+                items_summary += f"{idx}. {item_name} - {quantity:.1f} {unit} (AED {price_min:.2f} - {price_max:.2f})\n"
+            
+            if len(items) > 10:
+                items_summary += f"... and {len(items) - 10} more items\n"
+        
+        # Slack message payload
+        slack_message = {
+            "text": "🔔 New Supplier Contact Request",
+            "blocks": [
+                {
+                    "type": "header",
+                    "text": {
+                        "type": "plain_text",
+                        "text": "🔔 New Supplier Contact Request",
+                        "emoji": True
+                    }
+                },
+                {
+                    "type": "section",
+                    "fields": [
+                        {
+                            "type": "mrkdwn",
+                            "text": f"*Contact Information:*\n{contact_text}"
+                        },
+                        {
+                            "type": "mrkdwn",
+                            "text": f"*Time:*\n{timestamp}"
+                        }
+                    ]
+                },
+                {
+                    "type": "section",
+                    "text": {
+                        "type": "mrkdwn",
+                        "text": items_summary
+                    }
+                },
+                {
+                    "type": "divider"
+                }
+            ],
+            "attachments": [
+                {
+                    "color": "#36a64f",
+                    "title": "Full Items Data (JSON)",
+                    "text": f"```{json.dumps(items, indent=2)[:2000]}```",
+                    "footer": "Kaso Invoice Processing System"
+                }
+            ]
+        }
+        
+        # Send to Slack
+        response = requests.post(
+            slack_webhook_url,
+            json=slack_message,
+            headers={'Content-Type': 'application/json'}
+        )
+        
+        if response.status_code == 200:
+            return JSONResponse(
+                status_code=200,
+                content={
+                    "success": True,
+                    "message": "Contact request submitted successfully"
+                }
+            )
+        else:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to send to Slack: {response.text}"
+            )
+            
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error processing request: {str(e)}"
+        )
 
 
 if __name__ == "__main__":
