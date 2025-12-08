@@ -13,6 +13,7 @@ class AppConfig {
   static const String benchmarkEndpoint = '/api/benchmark';
   static const String listInvoicesEndpoint = '/api/invoices/list';
   static const String listOutputsEndpoint = '/api/outputs/list';
+  static const String downloadEndpoint = '/api/download';
   static const String analyzeCostsEndpoint = '/api/analyze_costs';
   static const String contactRequestEndpoint = '/api/contact_request';
   
