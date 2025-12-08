@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: kaso-invoice-backend
+    env: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    region: oregon
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: DEMO
+        value: true
+      - key: SLACK_WEBHOOK_URL
+        sync: false
+    healthCheckPath: /health
+
