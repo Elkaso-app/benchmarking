@@ -24,6 +24,12 @@ class LinePriceChart extends StatelessWidget {
     double minPrice = topItems.map((item) => (item['market_price'] ?? 0).toDouble()).reduce((a, b) => a < b ? a : b);
     double maxPrice = topItems.map((item) => (item['current_price'] ?? 0).toDouble()).reduce((a, b) => a > b ? a : b);
     
+    // Calculate the price range
+    double priceRange = maxPrice - minPrice;
+    
+    // Reduce the range to make candles appear 3x taller
+    double reducedRange = priceRange / 3;
+    
     return Card(
       elevation: 4,
       child: Padding(
@@ -163,12 +169,13 @@ class LinePriceChart extends StatelessWidget {
             
             // Candlestick Chart
             SizedBox(
-              height: 500,  // Taller for better visibility
+              height: 600,  // Even taller for better visibility
               child: BarChart(
                 BarChartData(
                   alignment: BarChartAlignment.spaceEvenly,  // Better spacing
-                  maxY: maxPrice * 1.15,  // More top padding
-                  minY: minPrice * 0.85,  // More bottom padding
+                  // Use reduced range to make candles appear 3x taller
+                  maxY: maxPrice + (reducedRange * 0.1),  // Small padding
+                  minY: minPrice - (reducedRange * 0.1),  // Small padding
                   barTouchData: BarTouchData(
                     enabled: true,
                     touchTooltipData: BarTouchTooltipData(
@@ -242,7 +249,7 @@ class LinePriceChart extends StatelessWidget {
                     leftTitles: AxisTitles(
                       sideTitles: SideTitles(
                         showTitles: true,
-                        interval: (maxPrice - minPrice) / 5,
+                        interval: reducedRange / 3,  // Adjusted for taller candles
                         getTitlesWidget: (double value, TitleMeta meta) {
                           return Text(
                             value.toStringAsFixed(0),
@@ -271,7 +278,7 @@ class LinePriceChart extends StatelessWidget {
                   gridData: FlGridData(
                     show: true,
                     drawVerticalLine: false,
-                    horizontalInterval: (maxPrice - minPrice) / 5,
+                    horizontalInterval: reducedRange / 3,  // Adjusted for taller candles
                     getDrawingHorizontalLine: (value) {
                       return FlLine(
                         color: Colors.grey.shade300,
