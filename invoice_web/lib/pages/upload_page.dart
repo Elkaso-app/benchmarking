@@ -262,22 +262,6 @@ class _UploadPageState extends State<UploadPage> {
               if (_masterList != null)
                 _buildMasterList(),
             ],
-            
-            const SizedBox(height: 32),
-            
-            // Optional: Individual results in expandable section
-            ExpansionTile(
-              title: const Text(
-                'View Individual Invoice Details',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              children: [
-                _buildResultsList(),
-              ],
-            ),
           ],
         ],
       ),
@@ -461,31 +445,6 @@ class _UploadPageState extends State<UploadPage> {
     );
   }
 
-  Widget _buildResultsList() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Processing Details',
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 16),
-        ListView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: _result!.results.length,
-          itemBuilder: (context, index) {
-            return InvoiceResultCard(
-              result: _result!.results[index],
-            );
-          },
-        ),
-      ],
-    );
-  }
 }
 
 
