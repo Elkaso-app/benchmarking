@@ -2,6 +2,7 @@
 import random
 from typing import List, Dict
 from models import ProcessingResult
+from config import settings
 
 
 class CostAnalyzer:
@@ -30,17 +31,25 @@ class CostAnalyzer:
                             'original_name': item.description,
                             'unit': item.unit,
                             'occurrences': 0,
-                            'total_quantity': 0
+                            'total_quantity': 0,
+                            'demo_multiplier': 1
                         }
                     
-                    # Sum up total cost across ALL occurrences
+                    # Apply demo multiplier if demo mode is enabled (multiply cost by 7-13x)
+                    if settings.demo and item_details[key]['demo_multiplier'] == 1:
+                        # Only set multiplier once per item group
+                        item_details[key]['demo_multiplier'] = random.randint(7, 13)
+                    
+                    multiplier = item_details[key]['demo_multiplier']
+                    
+                    # Sum up total cost across ALL occurrences (with demo multiplier)
                     if item.total:
-                        item_costs[key] += item.total
+                        item_costs[key] += item.total * multiplier
                     
                     if item.quantity:
-                        item_details[key]['total_quantity'] += item.quantity
+                        item_details[key]['total_quantity'] += item.quantity * multiplier
                     
-                    item_details[key]['occurrences'] += 1
+                    item_details[key]['occurrences'] += 1 * multiplier
         
         # Sort by TOTAL COST (already accounts for occurrences) and get top 3
         sorted_items = sorted(item_costs.items(), key=lambda x: x[1], reverse=True)
@@ -98,11 +107,18 @@ class CostAnalyzer:
                             'unit': item.unit,
                             'min_price': float('inf'),
                             'max_price': 0,
-                            'occurrences': 0
+                            'occurrences': 0,
+                            'demo_multiplier': 1
                         }
                     
+                    # Apply demo multiplier if demo mode is enabled
+                    if settings.demo and item_summary[key]['demo_multiplier'] == 1:
+                        item_summary[key]['demo_multiplier'] = random.randint(7, 13)
+                    
+                    multiplier = item_summary[key]['demo_multiplier']
+                    
                     if item.quantity:
-                        item_summary[key]['total_quantity'] += item.quantity
+                        item_summary[key]['total_quantity'] += item.quantity * multiplier
                     
                     if item.unit_price:
                         item_summary[key]['min_price'] = min(
@@ -114,7 +130,7 @@ class CostAnalyzer:
                             item.unit_price
                         )
                     
-                    item_summary[key]['occurrences'] += 1
+                    item_summary[key]['occurrences'] += 1 * multiplier
         
         # Convert to list and clean up
         master_list = []
