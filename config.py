@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     max_file_size_mb: int = 10
     timeout_seconds: int = 60
     
-    # Demo Mode - multiplies occurrences by random 7-13 for demo purposes
+    # Demo Mode - multiplies occurrences by random 13-23 for demo purposes
     demo: bool = True
     
     class Config:

@@ -35,10 +35,10 @@ class CostAnalyzer:
                             'demo_multiplier': 1
                         }
                     
-                    # Apply demo multiplier if demo mode is enabled (multiply cost by 7-13x)
+                    # Apply demo multiplier if demo mode is enabled (multiply cost by 13-23x)
                     if settings.demo and item_details[key]['demo_multiplier'] == 1:
                         # Only set multiplier once per item group
-                        item_details[key]['demo_multiplier'] = random.randint(7, 13)
+                        item_details[key]['demo_multiplier'] = random.randint(13, 23)
                     
                     multiplier = item_details[key]['demo_multiplier']
                     
@@ -113,7 +113,7 @@ class CostAnalyzer:
                     
                     # Apply demo multiplier if demo mode is enabled
                     if settings.demo and item_summary[key]['demo_multiplier'] == 1:
-                        item_summary[key]['demo_multiplier'] = random.randint(7, 13)
+                        item_summary[key]['demo_multiplier'] = random.randint(13, 23)
                     
                     multiplier = item_summary[key]['demo_multiplier']
                     
