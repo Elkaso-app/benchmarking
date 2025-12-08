@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
@@ -75,12 +76,6 @@ class _UploadPageState extends State<UploadPage> {
     }
   }
 
-  Future<void> _downloadFile(String url) async {
-    final uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri);
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -222,8 +217,6 @@ class _UploadPageState extends State<UploadPage> {
           if (_result != null) ...[
             const SizedBox(height: 32),
             _buildResultsSummary(),
-            const SizedBox(height: 24),
-            _buildDownloadButtons(),
             
             // Only show analysis if we have data from server
             if (_costAnalysis != null) ...[
@@ -390,61 +383,6 @@ class _UploadPageState extends State<UploadPage> {
     );
   }
 
-  Widget _buildDownloadButtons() {
-    final downloads = _result!.downloads;
-    if (downloads == null) return const SizedBox.shrink();
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Download Results',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              children: [
-                if (downloads.containsKey('items_csv'))
-                  _buildDownloadButton(
-                    'Items CSV',
-                    downloads['items_csv']!,
-                    Icons.table_chart,
-                  ),
-                if (downloads.containsKey('summary_csv'))
-                  _buildDownloadButton(
-                    'Summary CSV',
-                    downloads['summary_csv']!,
-                    Icons.summarize,
-                  ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDownloadButton(String label, String path, IconData icon) {
-    final apiService = context.read<ApiService>();
-    final url = '${apiService.baseUrl}$path';
-
-    return ElevatedButton.icon(
-      onPressed: () => _downloadFile(url),
-      icon: Icon(icon),
-      label: Text(label),
-      style: ElevatedButton.styleFrom(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-      ),
-    );
-  }
 
   Widget _buildMasterList() {
     return Card(
@@ -503,7 +441,10 @@ class _UploadPageState extends State<UploadPage> {
                     DataCell(
                       ConstrainedBox(
                         constraints: const BoxConstraints(maxWidth: 300),
-                        child: Text(item['description'] ?? ''),
+                        child: ImageFiltered(
+                          imageFilter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+                          child: Text(item['description'] ?? ''),
+                        ),
                       ),
                     ),
                     DataCell(Text((item['total_quantity'] ?? 0).toStringAsFixed(1))),
