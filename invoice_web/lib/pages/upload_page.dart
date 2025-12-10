@@ -11,8 +11,8 @@ import '../widgets/line_price_chart.dart';
 import '../widgets/savings_pie_charts.dart';
 import '../widgets/monthly_savings_chart.dart';
 import '../widgets/blurred_suppliers_list.dart';
-import '../widgets/ai_loader.dart';
-import '../widgets/magic_upload_zone.dart';
+import '../widgets/gpt_loader.dart';
+import '../widgets/simple_upload_zone.dart';
 
 class UploadPage extends StatefulWidget {
   const UploadPage({super.key});
@@ -124,6 +124,23 @@ class _UploadPageState extends State<UploadPage> with SingleTickerProviderStateM
     }
   }
 
+  String _getProcessingMessage(int stage) {
+    switch (stage) {
+      case 1:
+        return 'Uploading files...';
+      case 2:
+        return 'AI scanning documents...';
+      case 3:
+        return 'Extracting data with GPT-4o Vision...';
+      case 4:
+        return 'Analyzing costs and calculating savings...';
+      case 5:
+        return 'Finalizing results...';
+      default:
+        return 'Preparing...';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -131,8 +148,8 @@ class _UploadPageState extends State<UploadPage> with SingleTickerProviderStateM
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Magic Upload Zone
-          MagicUploadZone(
+          // Simple Upload Zone
+          SimpleUploadZone(
             selectedFiles: _selectedFiles,
             onSelectFiles: _pickFiles,
             onProcess: _processFiles,
@@ -141,15 +158,48 @@ class _UploadPageState extends State<UploadPage> with SingleTickerProviderStateM
 
           // Processing indicator
           if (_isProcessing) ...[
-            const SizedBox(height: 40),
+            const SizedBox(height: 60),
             const Center(
-              child: AILoader(
+              child: GPTLoader(
                 message: 'AI is processing your invoices...',
-                size: 100,
+                size: 80,
               ),
             ),
-            const SizedBox(height: 32),
-            ProcessingStages(currentStage: _processingStage - 1),
+            const SizedBox(height: 40),
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF9FAFB),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFE5E7EB)),
+              ),
+              child: Column(
+                children: [
+                  Text(
+                    'Processing ${_selectedFiles?.length ?? 0} invoice(s)',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF111827),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  LinearProgressIndicator(
+                    value: _processingStage > 0 ? _processingStage / 5 : null,
+                    backgroundColor: const Color(0xFFE5E7EB),
+                    valueColor: const AlwaysStoppedAnimation(Color(0xFF6366F1)),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    _getProcessingMessage(_processingStage),
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ],
 
           // Error message
