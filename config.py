@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     timeout_seconds: int = 60
     
     # Demo Mode - multiplies occurrences by random 13-23 for demo purposes
-    demo: bool = True
+    demo: bool = False
     
     class Config:
         env_file = ".env"

@@ -10,6 +10,8 @@ import uuid
 from datetime import datetime
 import requests
 import json
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
 
 from invoice_processor import InvoiceProcessor
 from benchmark import InvoiceBenchmark
@@ -105,7 +107,7 @@ async def process_single_invoice(file: UploadFile = File(...)):
 
 @app.post("/api/process/batch")
 async def process_batch_invoices(files: List[UploadFile] = File(...)):
-    """Process multiple invoice files.
+    """Process multiple invoice files in parallel.
     
     Args:
         files: List of invoice PDF files to process
@@ -120,7 +122,7 @@ async def process_batch_invoices(files: List[UploadFile] = File(...)):
     temp_files: List[Path] = []
     
     try:
-        # Process each file
+        # Save all files first
         for file in files:
             if not file.filename.lower().endswith('.pdf'):
                 continue
@@ -133,10 +135,17 @@ async def process_batch_invoices(files: List[UploadFile] = File(...)):
                 # Save uploaded file
                 content = await file.read()
                 tmp_file.write(content)
-            
-            # Process invoice
-            result = processor.process_invoice(tmp_path)
-            results.append(result)
+        
+        # Process all invoices in parallel using ThreadPoolExecutor
+        loop = asyncio.get_event_loop()
+        with ThreadPoolExecutor(max_workers=min(len(temp_files), 10)) as executor:
+            # Create tasks for all files
+            tasks = [
+                loop.run_in_executor(executor, processor.process_invoice, tmp_path)
+                for tmp_path in temp_files
+            ]
+            # Wait for all tasks to complete
+            results = await asyncio.gather(*tasks)
         
         # Export to CSV
         output_path = Path(settings.output_dir)
