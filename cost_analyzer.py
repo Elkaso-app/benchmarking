@@ -11,7 +11,7 @@ class CostAnalyzer:
     @staticmethod
     def calculate_savings_analysis(results: List[ProcessingResult]) -> Dict:
         """
-        Calculate top 3 overpaying items with current vs market price comparison.
+        Calculate top 5 overpaying items with current vs market price comparison.
         
         Market price = Current price with random 3-7% discount
         IMPORTANT: Costs are TOTAL across ALL occurrences (multiplied by count)
@@ -51,15 +51,16 @@ class CostAnalyzer:
                     
                     item_details[key]['occurrences'] += 1 * multiplier
         
-        # Sort by TOTAL COST (already accounts for occurrences) and get top 3
+        # Sort by TOTAL COST (already accounts for occurrences) and get top 5
         sorted_items = sorted(item_costs.items(), key=lambda x: x[1], reverse=True)
-        top_3 = sorted_items[:3]
+        top_5 = sorted_items[:5]
         
         # Calculate market prices and savings
         top_items = []
         total_savings = 0
+        total_current_spending = 0
         
-        for key, total_current_cost in top_3:
+        for key, total_current_cost in top_5:
             details = item_details[key]
             
             # Random discount between 3% and 7%
@@ -69,8 +70,9 @@ class CostAnalyzer:
             total_market_cost = total_current_cost * (1 - discount_percent / 100)
             total_saving = total_current_cost - total_market_cost
             
-            # Accumulate total savings
+            # Accumulate total savings and spending
             total_savings += total_saving
+            total_current_spending += total_current_cost
             
             top_items.append({
                 'name': details['original_name'],
@@ -83,9 +85,20 @@ class CostAnalyzer:
                 'total_quantity': round(details['total_quantity'], 2)
             })
         
+        # Calculate additional metrics for KPI cards
+        num_items_with_cost_reduction = len(top_5)
+        total_items_analyzed = len(item_costs)
+        percent_overpaid = round((num_items_with_cost_reduction / total_items_analyzed * 100) if total_items_analyzed > 0 else 0, 1)
+        cost_reduction_percent = round((total_savings / total_current_spending * 100) if total_current_spending > 0 else 0, 1)
+        
         return {
-            'top_3_items': top_items,
+            'top_items': top_items,  # Renamed from top_3_items to top_items
             'total_savings': round(total_savings, 2),
+            'total_current_spending': round(total_current_spending, 2),
+            'num_items_with_cost_reduction': num_items_with_cost_reduction,
+            'total_items_analyzed': total_items_analyzed,
+            'percent_overpaid': percent_overpaid,
+            'cost_reduction_percent': cost_reduction_percent,
             'currency': 'AED',
             'analysis_type': 'group_buying_opportunity'
         }

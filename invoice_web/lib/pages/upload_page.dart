@@ -6,7 +6,10 @@ import 'package:url_launcher/url_launcher.dart';
 import '../services/api_service.dart';
 import '../models/invoice_data.dart';
 import '../widgets/invoice_result_card.dart';
+import '../widgets/kpi_cards.dart';
 import '../widgets/line_price_chart.dart';
+import '../widgets/savings_pie_charts.dart';
+import '../widgets/monthly_savings_chart.dart';
 import '../widgets/blurred_suppliers_list.dart';
 
 class UploadPage extends StatefulWidget {
@@ -222,43 +225,85 @@ class _UploadPageState extends State<UploadPage> {
             if (_costAnalysis != null) ...[
               const SizedBox(height: 40),
               const Divider(thickness: 2),
-              const SizedBox(height: 24),
+              const SizedBox(height: 32),
               
-              // Header for analysis section
-              Row(
-                children: [
-                  Icon(Icons.analytics, size: 32, color: Colors.blue.shade700),
-                  const SizedBox(width: 12),
-                  const Text(
-                    'Cost Savings Analysis',
-                    style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                    ),
+              // 1. KPI Cards with big green numbers (Overview section)
+              KpiCards(costAnalysis: _costAnalysis!),
+              
+              const SizedBox(height: 32),
+              
+              // 2. Bar Chart - Current Price vs Market Price per Unit
+              Card(
+                elevation: 2,
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 40,
+                              height: 20,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFE57373),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            const Text(
+                              'Your current price (SAR)',
+                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+                            ),
+                            const SizedBox(width: 24),
+                            Container(
+                              width: 40,
+                              height: 20,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF1A237E),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            const Text(
+                              'Kaso market price (est) (SAR)',
+                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      LinePriceChart(costAnalysis: _costAnalysis!),
+                    ],
                   ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Group buying opportunity - Save money on your purchases',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey[600],
                 ),
               ),
-              const SizedBox(height: 32),
-              
-              // 1. Line Chart - Price Comparison (Current vs Market Price)
-              LinePriceChart(costAnalysis: _costAnalysis!),
               
               const SizedBox(height: 32),
               
-              // 2. Blurred Suppliers List
+              // 3. Two Pie Charts Side by Side
+              SavingsPieCharts(costAnalysis: _costAnalysis!),
+              
+              const SizedBox(height: 32),
+              
+              // 4. Bottom Bar Chart - Monthly Savings per Item
+              MonthlySavingsChart(costAnalysis: _costAnalysis!),
+              
+              const SizedBox(height: 32),
+              
+              // 5. Blurred Suppliers List
               BlurredSuppliersList(itemsList: _masterList),
               
               const SizedBox(height: 32),
               
-              // 3. Master List of Items
+              // 6. Master List of Items
               if (_masterList != null)
                 _buildMasterList(),
             ],

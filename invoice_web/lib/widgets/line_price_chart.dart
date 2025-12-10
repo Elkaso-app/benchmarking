@@ -12,484 +12,273 @@ class LinePriceChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final topItems = costAnalysis['top_3_items'] as List? ?? [];
-    final totalSavings = costAnalysis['total_savings'] ?? 0;
+    final topItems = costAnalysis['top_items'] as List? ?? [];
     final currency = costAnalysis['currency'] ?? 'AED';
 
     if (topItems.isEmpty) {
       return const SizedBox.shrink();
     }
 
-    // Find min and max for Y-axis
-    double minPrice = topItems.map((item) => (item['market_price'] ?? 0).toDouble()).reduce((a, b) => a < b ? a : b);
-    double maxPrice = topItems.map((item) => (item['current_price'] ?? 0).toDouble()).reduce((a, b) => a > b ? a : b);
+    // Extract data for chart
+    final itemNames = topItems.map((item) => item['name'] as String).toList();
+    final currentPrices = topItems.map((item) => (item['current_price'] ?? 0.0).toDouble()).toList();
+    final marketPrices = topItems.map((item) => (item['market_price'] ?? 0.0).toDouble()).toList();
     
-    // Calculate the price range
-    double priceRange = maxPrice - minPrice;
-    
-    // Reduce the range to make candles appear 3x taller
-    double reducedRange = priceRange / 3;
-    
-    return Card(
-      elevation: 4,
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header with total savings
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Colors.orange.shade100, Colors.orange.shade50],
-                ),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.orange.shade300, width: 2),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.savings, size: 48, color: Colors.orange.shade700),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Kaso Saving Potential',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.grey[700],
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            Text(
-                              '${totalSavings.toStringAsFixed(2)} $currency',
-                              style: TextStyle(
-                                fontSize: 36,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.orange.shade700,
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Text(
-                                'Total saving from top 3 items',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: Colors.grey[600],
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            
-            const SizedBox(height: 24),
-            
-            // Title
-            Row(
-              children: [
-                Icon(Icons.show_chart, color: Colors.blue.shade700, size: 28),
-                const SizedBox(width: 12),
-                const Text(
-                  'Price Comparison - Your Price vs Kaso Price',
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            
-            // Legend
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.grey.shade300),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.arrow_upward, color: Colors.red.shade600, size: 20),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Your Price (Top)',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.red.shade700,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Icon(Icons.trending_down, color: Colors.orange.shade600, size: 24),
-                  const SizedBox(width: 16),
-                  Icon(Icons.arrow_downward, color: Colors.orange.shade600, size: 20),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Kaso Price (Bottom)',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.green.shade700,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Colors.green.shade100,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      '= Savings',
-                      style: TextStyle(
-                        fontSize: 13,
+    // Find max price for Y-axis
+    final allPrices = [...currentPrices, ...marketPrices];
+    final maxPrice = allPrices.reduce((a, b) => a > b ? a : b);
+    final minPrice = allPrices.reduce((a, b) => a < b ? a : b);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Title
+        Text(
+          'Current Price v Market Price per Unit ($currency)',
+          style: const TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 24),
+        
+        // Chart
+        SizedBox(
+          height: 500,
+          child: BarChart(
+            BarChartData(
+              alignment: BarChartAlignment.spaceAround,
+              maxY: maxPrice * 1.15,
+              minY: minPrice * 0.85,
+              barTouchData: BarTouchData(
+                enabled: true,
+                touchTooltipData: BarTouchTooltipData(
+                  getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                    final item = topItems[groupIndex];
+                    final price = rodIndex == 0 ? item['current_price'] : item['market_price'];
+                    final label = rodIndex == 0 ? 'Your Price' : 'Kaso Price';
+                    
+                    return BarTooltipItem(
+                      '$label\n${price.toStringAsFixed(2)} $currency',
+                      const TextStyle(
+                        color: Colors.white,
                         fontWeight: FontWeight.bold,
-                        color: Colors.green.shade700,
                       ),
-                    ),
-                  ),
-                ],
+                    );
+                  },
+                ),
               ),
-            ),
-            
-            const SizedBox(height: 24),
-            
-            // Candlestick Chart
-            SizedBox(
-              height: 600,  // Even taller for better visibility
-              child: BarChart(
-                BarChartData(
-                  alignment: BarChartAlignment.spaceEvenly,  // Better spacing
-                  // Use reduced range to make candles appear 3x taller
-                  maxY: maxPrice + (reducedRange * 0.1),  // Small padding
-                  minY: minPrice - (reducedRange * 0.1),  // Small padding
-                  barTouchData: BarTouchData(
-                    enabled: true,
-                    touchTooltipData: BarTouchTooltipData(
-                      getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                        final item = topItems[groupIndex];
-                        final currentPrice = (item['current_price'] ?? 0).toDouble();
-                        final marketPrice = (item['market_price'] ?? 0).toDouble();
-                        final savings = (item['saving_amount'] ?? 0).toDouble();
-                        
-                        return BarTooltipItem(
-                          'Your Price: ${currentPrice.toStringAsFixed(2)} $currency\n'
-                          'Kaso Price: ${marketPrice.toStringAsFixed(2)} $currency\n'
-                          'Save: ${savings.toStringAsFixed(2)} $currency',
-                          const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12,
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  titlesData: FlTitlesData(
-                    show: true,
-                    rightTitles: const AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
-                    ),
-                    topTitles: const AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
-                    ),
-                    bottomTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        reservedSize: 80,
-                        getTitlesWidget: (double value, TitleMeta meta) {
-                          int index = value.toInt();
-                          if (index < 0 || index >= topItems.length) {
-                            return const Text('');
-                          }
-                          
-                          final item = topItems[index];
-                          final name = item['name'] ?? 'Item ${index + 1}';
-                          
-                          // Blur the item name
-                          return Padding(
-                            padding: const EdgeInsets.only(top: 8.0),
-                            child: SizedBox(
-                              width: 100,
-                              child: ImageFiltered(
-                                imageFilter: ImageFilter.blur(sigmaX: 4, sigmaY: 4),
-                                child: Transform.rotate(
-                                  angle: -0.3,
-                                  child: Text(
-                                    name,
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.grey[800],
-                                    ),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                    textAlign: TextAlign.center,
-                                  ),
+              titlesData: FlTitlesData(
+                show: true,
+                rightTitles: const AxisTitles(
+                  sideTitles: SideTitles(showTitles: false),
+                ),
+                topTitles: const AxisTitles(
+                  sideTitles: SideTitles(showTitles: false),
+                ),
+                bottomTitles: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    reservedSize: 80,
+                    getTitlesWidget: (double value, TitleMeta meta) {
+                      int index = value.toInt();
+                      if (index < 0 || index >= itemNames.length) {
+                        return const Text('');
+                      }
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 8.0),
+                        child: SizedBox(
+                          width: 100,
+                          child: ImageFiltered(
+                            imageFilter: ImageFilter.blur(sigmaX: 4, sigmaY: 4),
+                            child: Transform.rotate(
+                              angle: -0.3,
+                              child: Text(
+                                itemNames[index],
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
                                 ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                textAlign: TextAlign.center,
                               ),
                             ),
-                          );
-                        },
-                      ),
-                    ),
-                    leftTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        interval: reducedRange / 3,  // Adjusted for taller candles
-                        getTitlesWidget: (double value, TitleMeta meta) {
-                          return Text(
-                            value.toStringAsFixed(0),
-                            style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          );
-                        },
-                        reservedSize: 42,
-                      ),
-                      axisNameWidget: Text(
-                        'Price ($currency)',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
+                          ),
                         ),
-                      ),
-                      axisNameSize: 20,
-                    ),
-                  ),
-                  borderData: FlBorderData(
-                    show: true,
-                    border: Border.all(color: Colors.grey.shade400, width: 1),
-                  ),
-                  gridData: FlGridData(
-                    show: true,
-                    drawVerticalLine: false,
-                    horizontalInterval: reducedRange / 3,  // Adjusted for taller candles
-                    getDrawingHorizontalLine: (value) {
-                      return FlLine(
-                        color: Colors.grey.shade300,
-                        strokeWidth: 1,
                       );
                     },
                   ),
-                  barGroups: topItems.asMap().entries.map((entry) {
-                    final index = entry.key;
-                    final item = entry.value;
-                    final currentPrice = (item['current_price'] ?? 0).toDouble();
-                    final marketPrice = (item['market_price'] ?? 0).toDouble();
-                    final savingAmount = currentPrice - marketPrice;
-                    
-                    // Create candlestick: bottom (Kaso price) to top (Your price)
-                    return BarChartGroupData(
-                      x: index,
-                      barsSpace: 20,
-                      barRods: [
-                        BarChartRodData(
-                          fromY: marketPrice, // Kaso price (bottom)
-                          toY: currentPrice,   // Your price (top)
-                          // Gradient from red (top) to orange (bottom) to show the savings
-                          gradient: LinearGradient(
-                            colors: [
-                              Colors.red.shade600,      // Top - Your Price (bad)
-                              Colors.red.shade400,
-                              Colors.orange.shade400,   // Bottom - Kaso Price (good)
-                            ],
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
+                ),
+                leftTitles: AxisTitles(
+                  axisNameWidget: Text(
+                    'Price ($currency)',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  axisNameSize: 24,
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    interval: (maxPrice - minPrice) / 5,
+                    reservedSize: 50,
+                    getTitlesWidget: (value, meta) {
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: Text(
+                          value.toStringAsFixed(0),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
                           ),
-                          width: 60,  // Wider bars
-                          borderRadius: BorderRadius.circular(4),
-                          borderSide: BorderSide(
-                            color: Colors.red.shade800,
-                            width: 2,
-                          ),
-                          // Add tooltip-like stack items to show the difference
-                          rodStackItems: [
-                            BarChartRodStackItem(
-                              marketPrice,
-                              marketPrice + (savingAmount * 0.5),
-                              Colors.red.shade300.withOpacity(0.5),
-                            ),
-                          ],
                         ),
-                      ],
-                    );
-                  }).toList(),
+                      );
+                    },
+                  ),
                 ),
               ),
+              borderData: FlBorderData(
+                show: true,
+                border: Border(
+                  bottom: BorderSide(color: Colors.grey.shade400, width: 1),
+                  left: BorderSide(color: Colors.grey.shade400, width: 1),
+                ),
+              ),
+              gridData: FlGridData(
+                show: true,
+                drawVerticalLine: false,
+                horizontalInterval: (maxPrice - minPrice) / 5,
+                getDrawingHorizontalLine: (value) {
+                  return FlLine(
+                    color: Colors.grey.shade300,
+                    strokeWidth: 1,
+                  );
+                },
+              ),
+              barGroups: topItems.asMap().entries.map((entry) {
+                final index = entry.key;
+                final item = entry.value;
+                final currentPrice = (item['current_price'] ?? 0.0).toDouble();
+                final marketPrice = (item['market_price'] ?? 0.0).toDouble();
+                
+                return BarChartGroupData(
+                  x: index,
+                  barsSpace: 8,
+                  barRods: [
+                    // Your current price (red/coral bar)
+                    BarChartRodData(
+                      toY: currentPrice,
+                      color: const Color(0xFFE57373), // Coral/light red to match design
+                      width: 35,
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(6),
+                        topRight: Radius.circular(6),
+                      ),
+                      rodStackItems: [],
+                      backDrawRodData: BackgroundBarChartRodData(
+                        show: false,
+                      ),
+                    ),
+                    // Kaso market price (navy blue bar)
+                    BarChartRodData(
+                      toY: marketPrice,
+                      color: const Color(0xFF1A237E), // Navy blue to match design
+                      width: 35,
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(6),
+                        topRight: Radius.circular(6),
+                      ),
+                    ),
+                  ],
+                  showingTooltipIndicators: [0, 1],
+                );
+              }).toList(),
             ),
-            
-            const SizedBox(height: 24),
-            
-            // Items details
-            ...topItems.asMap().entries.map((entry) {
-              final index = entry.key;
-              final item = entry.value;
-              return _buildItemDetail(item, index + 1, currency);
-            }).toList(),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLegendItem(Color color, String label) {
-    return Row(
-      children: [
-        Container(
-          width: 20,
-          height: 20,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(2),
           ),
         ),
-        const SizedBox(width: 8),
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-          ),
+        
+        // Show values on bars as a legend below chart
+        const SizedBox(height: 24),
+        Wrap(
+          spacing: 20,
+          runSpacing: 12,
+          children: topItems.asMap().entries.map((entry) {
+            final item = entry.value;
+            final name = item['name'] ?? '';
+            final currentPrice = (item['current_price'] ?? 0.0).toDouble();
+            final marketPrice = (item['market_price'] ?? 0.0).toDouble();
+            
+            return Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.grey.shade200),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(
+                    width: 120,
+                    child: ImageFiltered(
+                      imageFilter: ImageFilter.blur(sigmaX: 3, sigmaY: 3),
+                      child: Text(
+                        name,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE57373).withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      _formatNumber(currentPrice),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFFE57373),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1A237E).withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      _formatNumber(marketPrice),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF1A237E),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
         ),
       ],
     );
   }
-
-  Widget _buildItemDetail(Map<String, dynamic> item, int rank, String currency) {
-    final name = item['name'] ?? '';
-    final currentPrice = (item['current_price'] ?? 0).toDouble();
-    final marketPrice = (item['market_price'] ?? 0).toDouble();
-    final savingAmount = (item['saving_amount'] ?? 0).toDouble();
-    final occurrences = item['occurrences'] ?? 0;
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.shade300),
-      ),
-      child: Row(
-        children: [
-          // Rank
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: _getRankColor(rank),
-              shape: BoxShape.circle,
-            ),
-            child: Center(
-              child: Text(
-                '$rank',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          
-          // Item info (BLURRED)
-          Expanded(
-            child: ImageFiltered(
-              imageFilter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    name,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  Text(
-                    '$occurrences occurrence(s)',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          
-          // Prices (NOT BLURRED)
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                'Your: ${currentPrice.toStringAsFixed(2)} $currency',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.red.shade600,
-                ),
-              ),
-              Text(
-                'Kaso: ${marketPrice.toStringAsFixed(2)} $currency',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.green.shade600,
-                ),
-              ),
-            ],
-          ),
-          
-          const SizedBox(width: 16),
-          
-          // Savings (replace % with -)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: Colors.green.shade100,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Text(
-              '- ${savingAmount.toStringAsFixed(2)} $currency',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.bold,
-                color: Colors.green.shade700,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Color _getRankColor(int rank) {
-    switch (rank) {
-      case 1:
-        return Colors.amber.shade600; // Gold
-      case 2:
-        return Colors.grey.shade400; // Silver
-      case 3:
-        return Colors.brown.shade400; // Bronze
-      default:
-        return Colors.grey.shade600;
+  
+  String _formatNumber(double number) {
+    if (number >= 1000) {
+      return '${(number / 1000).toStringAsFixed(1)}K';
     }
+    return number.toStringAsFixed(0);
   }
 }
