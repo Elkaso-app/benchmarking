@@ -11,6 +11,8 @@ import '../widgets/line_price_chart.dart';
 import '../widgets/savings_pie_charts.dart';
 import '../widgets/monthly_savings_chart.dart';
 import '../widgets/blurred_suppliers_list.dart';
+import '../widgets/ai_loader.dart';
+import '../widgets/magic_upload_zone.dart';
 
 class UploadPage extends StatefulWidget {
   const UploadPage({super.key});
@@ -19,13 +21,30 @@ class UploadPage extends StatefulWidget {
   State<UploadPage> createState() => _UploadPageState();
 }
 
-class _UploadPageState extends State<UploadPage> {
+class _UploadPageState extends State<UploadPage> with SingleTickerProviderStateMixin {
   List<PlatformFile>? _selectedFiles;
   bool _isProcessing = false;
   BenchmarkResult? _result;
   Map<String, dynamic>? _costAnalysis;
   List<dynamic>? _masterList;
   String? _error;
+  int _processingStage = 0;
+  late AnimationController _successController;
+
+  @override
+  void initState() {
+    super.initState();
+    _successController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
+  }
+
+  @override
+  void dispose() {
+    _successController.dispose();
+    super.dispose();
+  }
 
   Future<void> _pickFiles() async {
     try {
@@ -40,6 +59,7 @@ class _UploadPageState extends State<UploadPage> {
           _selectedFiles = result.files;
           _result = null;
           _error = null;
+          _successController.reset();
         });
       }
     } catch (e) {
@@ -58,27 +78,51 @@ class _UploadPageState extends State<UploadPage> {
     setState(() {
       _isProcessing = true;
       _error = null;
+      _processingStage = 0;
     });
 
     try {
+      // Simulate processing stages for better UX
+      _updateStage(1); // Uploading
+      await Future.delayed(const Duration(milliseconds: 500));
+      
+      _updateStage(2); // AI scanning
+      await Future.delayed(const Duration(milliseconds: 500));
+      
+      _updateStage(3); // Extracting data
       final apiService = context.read<ApiService>();
       final response = await apiService.processBatchInvoices(_selectedFiles!);
+      
+      _updateStage(4); // Analyzing costs
+      await Future.delayed(const Duration(milliseconds: 500));
+      
+      _updateStage(5); // Complete
+      await Future.delayed(const Duration(milliseconds: 300));
 
       setState(() {
         _result = response;
-        // Extract server-side calculated data
         _costAnalysis = response.costAnalysis;
         _masterList = response.masterList;
         _isProcessing = false;
       });
+      
+      // Trigger success animation
+      _successController.forward();
+      
     } catch (e) {
       setState(() {
         _error = e.toString();
         _isProcessing = false;
+        _processingStage = 0;
       });
     }
   }
 
+  void _updateStage(int stage) {
+    if (mounted) {
+      setState(() => _processingStage = stage);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -87,137 +131,127 @@ class _UploadPageState extends State<UploadPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Header
-          const Text(
-            'Upload & Process Invoices',
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-            ),
+          // Magic Upload Zone
+          MagicUploadZone(
+            selectedFiles: _selectedFiles,
+            onSelectFiles: _pickFiles,
+            onProcess: _processFiles,
+            isProcessing: _isProcessing,
           ),
-          const SizedBox(height: 8),
-          Text(
-            'Select PDF invoices to extract structured data',
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.grey[600],
-            ),
-          ),
-          const SizedBox(height: 32),
 
-          // File picker card
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                children: [
-                  Icon(
-                    Icons.cloud_upload,
-                    size: 64,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Select Invoice Files',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text('Supported format: PDF'),
-                  const SizedBox(height: 24),
-                  ElevatedButton.icon(
-                    onPressed: _isProcessing ? null : _pickFiles,
-                    icon: const Icon(Icons.file_open),
-                    label: const Text('Choose Files'),
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 32,
-                        vertical: 16,
-                      ),
-                    ),
-                  ),
-                  if (_selectedFiles != null && _selectedFiles!.isNotEmpty) ...[
-                    const SizedBox(height: 24),
-                    const Divider(),
-                    const SizedBox(height: 16),
-                    Text(
-                      '${_selectedFiles!.length} file(s) selected',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      height: 150,
-                      child: ListView.builder(
-                        itemCount: _selectedFiles!.length,
-                        itemBuilder: (context, index) {
-                          final file = _selectedFiles![index];
-                          return ListTile(
-                            dense: true,
-                            leading: const Icon(Icons.picture_as_pdf),
-                            title: Text(file.name),
-                            subtitle: Text(
-                              '${(file.size / 1024).toStringAsFixed(1)} KB',
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    FilledButton.icon(
-                      onPressed: _isProcessing ? null : _processFiles,
-                      icon: _isProcessing
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : const Icon(Icons.play_arrow),
-                      label: Text(
-                        _isProcessing ? 'Processing...' : 'Process Invoices',
-                      ),
-                      style: FilledButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 32,
-                          vertical: 16,
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
+          // Processing indicator
+          if (_isProcessing) ...[
+            const SizedBox(height: 40),
+            const Center(
+              child: AILoader(
+                message: 'AI is processing your invoices...',
+                size: 100,
               ),
             ),
-          ),
+            const SizedBox(height: 32),
+            ProcessingStages(currentStage: _processingStage - 1),
+          ],
 
           // Error message
           if (_error != null) ...[
             const SizedBox(height: 24),
-            Card(
-              color: Colors.red[50],
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    const Icon(Icons.error, color: Colors.red),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Text(
-                        _error!,
-                        style: const TextStyle(color: Colors.red),
-                      ),
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.red.shade50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.red.shade200),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.error_outline, color: Colors.red.shade700, size: 28),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Processing Error',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.red.shade700,
+                            fontSize: 16,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          _error!,
+                          style: TextStyle(color: Colors.red.shade700),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ],
 
-          // Results
-          if (_result != null) ...[
+          // Success Animation and Results
+          if (_result != null && !_isProcessing) ...[
+            const SizedBox(height: 40),
+            // Success indicator with animation
+            AnimatedBuilder(
+              animation: _successController,
+              builder: (context, child) {
+                return Transform.scale(
+                  scale: 0.8 + (_successController.value * 0.2),
+                  child: Opacity(
+                    opacity: _successController.value,
+                    child: Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF4CAF50), Color(0xFF66BB6A)],
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF4CAF50).withOpacity(0.3),
+                            blurRadius: 20,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: const Row(
+                        children: [
+                          Icon(Icons.check_circle, color: Colors.white, size: 32),
+                          SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Processing Complete!',
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                  'AI has successfully analyzed your invoices',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.white70,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Icon(Icons.auto_awesome, color: Colors.white, size: 28),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
             const SizedBox(height: 32),
             _buildResultsSummary(),
             
@@ -316,19 +350,49 @@ class _UploadPageState extends State<UploadPage> {
   Widget _buildResultsSummary() {
     final result = _result!;
     return Card(
-      child: Padding(
+      elevation: 3,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Colors.white,
+              Colors.blue.shade50.withOpacity(0.3),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(16),
+        ),
         padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Processing Summary',
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-              ),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1A237E).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.analytics,
+                    color: Color(0xFF1A237E),
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                const Text(
+                  'Processing Summary',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
             Row(
               children: [
                 Expanded(
@@ -384,8 +448,8 @@ class _UploadPageState extends State<UploadPage> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(0.3)),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.3), width: 2),
       ),
       child: Column(
         children: [
@@ -405,16 +469,19 @@ class _UploadPageState extends State<UploadPage> {
             style: TextStyle(
               fontSize: 12,
               color: Colors.grey[600],
+              fontWeight: FontWeight.w500,
             ),
+            textAlign: TextAlign.center,
           ),
         ],
       ),
     );
   }
 
-
   Widget _buildMasterList() {
     return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
@@ -422,7 +489,18 @@ class _UploadPageState extends State<UploadPage> {
           children: [
             Row(
               children: [
-                const Icon(Icons.list, size: 28),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1A237E).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.list,
+                    color: Color(0xFF1A237E),
+                    size: 24,
+                  ),
+                ),
                 const SizedBox(width: 12),
                 const Text(
                   'Master List - All Items',
@@ -432,11 +510,19 @@ class _UploadPageState extends State<UploadPage> {
                   ),
                 ),
                 const Spacer(),
-                Text(
-                  '${_masterList!.length} unique items',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.grey[600],
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1A237E).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    '${_masterList!.length} unique items',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Color(0xFF1A237E),
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ],
@@ -446,7 +532,7 @@ class _UploadPageState extends State<UploadPage> {
               scrollDirection: Axis.horizontal,
               child: DataTable(
                 columnSpacing: 32,
-                headingRowColor: MaterialStateProperty.all(Colors.blue.shade50),
+                headingRowColor: MaterialStateProperty.all(const Color(0xFF1A237E).withOpacity(0.05)),
                 columns: const [
                   DataColumn(label: Text('Item', style: TextStyle(fontWeight: FontWeight.bold))),
                   DataColumn(label: Text('Quantity', style: TextStyle(fontWeight: FontWeight.bold)), numeric: true),
@@ -489,7 +575,4 @@ class _UploadPageState extends State<UploadPage> {
       ),
     );
   }
-
 }
-
-

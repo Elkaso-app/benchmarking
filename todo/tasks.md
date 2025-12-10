@@ -1,2 +1,1 @@
-✅ ~~in backend Instead of process the invoices one by one , do it in parallel~~
-✅ ~~turn off the demo mode on backend~~
+✅ ~~make the design more like AI and magic and spinner and loader , make the first ui (upload invoices) for compatable with reset of the design~~
