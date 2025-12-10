@@ -48,3 +48,4 @@ echo -e "${GREEN}Your app is now live on Firebase Hosting${NC}"
 echo ""
 echo -e "Run ${BLUE}firebase hosting:channel:list${NC} to see your deployed URL"
 
+
