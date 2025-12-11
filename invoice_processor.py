@@ -65,7 +65,7 @@ Extract the following information:
    - Description (exact text from invoice)
    - Quantity
    - Unit price
-   - Total price
+   - Total price (net amount/amount before tax)
    - Unit of measurement (if present)
 3. Financial totals (subtotal, tax, total amount)
 
@@ -91,11 +91,20 @@ Return ONLY a valid JSON object with this exact structure:
   "total_amount": number or null
 }
 
+CRITICAL VALIDATION RULES:
+- For each item, VERIFY that: quantity × unit_price = total (net amount)
+- The "total" field should be the NET AMOUNT or AMOUNT BEFORE TAX (NOT the gross total with VAT)
+- If the math doesn't match, re-read the invoice carefully and correct the values
+- Extract values from the correct columns: Quantity, Price (unit price), Amount Before Tax (total)
+- If you cannot read an item with at least 85% confidence/accuracy, SKIP that item entirely
+- Only include items where you are confident about all values (description, quantity, unit_price, total)
+
 Important:
-- Extract ALL items from the invoice, no matter how many
+- Extract ONLY items you can read clearly and accurately (≥85% confidence)
 - Keep descriptions exactly as they appear
 - Use null for missing values
 - Ensure all numbers are numeric types (not strings)
+- ALWAYS validate: quantity × unit_price = total
 - Return ONLY valid JSON, no additional text"""
     
     def process_with_openai(self, image_bytes: bytes) -> InvoiceData:
@@ -149,10 +158,10 @@ Important:
         return InvoiceData(**data)
     
     def process_invoice(self, file_path: Path) -> ProcessingResult:
-        """Process a single invoice file.
+        """Process a single invoice file (PDF or image).
         
         Args:
-            file_path: Path to the invoice file
+            file_path: Path to the invoice file (PDF, JPG, JPEG, PNG)
             
         Returns:
             Processing result with extracted data
@@ -161,14 +170,31 @@ Important:
         filename = file_path.name
         
         try:
-            # Convert PDF to images
-            images = self.pdf_to_images(file_path, max_pages=1)  # Process first page
+            # Check if file is an image or PDF
+            file_ext = file_path.suffix.lower()
+            
+            if file_ext in ['.jpg', '.jpeg', '.png']:
+                # Read image file directly
+                with open(file_path, 'rb') as f:
+                    image_bytes = f.read()
+                images = [image_bytes]
+            elif file_ext == '.pdf':
+                # Convert PDF to images
+                images = self.pdf_to_images(file_path, max_pages=1)  # Process first page
+            else:
+                return ProcessingResult(
+                    filename=filename,
+                    success=False,
+                    error=f"Unsupported file type: {file_ext}",
+                    processing_time=time.time() - start_time,
+                    model_used=self.model
+                )
             
             if not images:
                 return ProcessingResult(
                     filename=filename,
                     success=False,
-                    error="No images extracted from PDF",
+                    error="No images extracted from file",
                     processing_time=time.time() - start_time,
                     model_used=self.model
                 )

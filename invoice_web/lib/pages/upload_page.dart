@@ -51,7 +51,7 @@ class _UploadPageState extends State<UploadPage> with SingleTickerProviderStateM
     try {
       final result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
-        allowedExtensions: ['pdf'],
+        allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png'],
         allowMultiple: true,
       );
 
@@ -590,18 +590,28 @@ class _UploadPageState extends State<UploadPage> with SingleTickerProviderStateM
                   DataColumn(label: Text('Quantity', style: TextStyle(fontWeight: FontWeight.bold)), numeric: true),
                   DataColumn(label: Text('Unit', style: TextStyle(fontWeight: FontWeight.bold))),
                   DataColumn(label: Text('Price Range', style: TextStyle(fontWeight: FontWeight.bold))),
+                  DataColumn(label: Text('Gross Amount', style: TextStyle(fontWeight: FontWeight.bold)), numeric: true),
                   DataColumn(label: Text('Count', style: TextStyle(fontWeight: FontWeight.bold)), numeric: true),
                 ],
                 rows: _masterList!.map((item) {
                   final priceMin = item['price_min'];
                   final priceMax = item['price_max'];
+                  final quantity = (item['total_quantity'] ?? 0).toDouble();
+                  
                   String priceRange = '-';
+                  String grossAmount = '-';
+                  
                   if (priceMin != null && priceMax != null) {
                     if (priceMin == priceMax) {
                       priceRange = priceMin.toStringAsFixed(2);
                     } else {
                       priceRange = '[${priceMin.toStringAsFixed(2)}, ${priceMax.toStringAsFixed(2)}]';
                     }
+                    
+                    // Calculate gross amount: quantity × average price
+                    final avgPrice = (priceMin + priceMax) / 2;
+                    final gross = quantity * avgPrice;
+                    grossAmount = gross.toStringAsFixed(2);
                   }
                   
                   return DataRow(cells: [
@@ -616,9 +626,10 @@ class _UploadPageState extends State<UploadPage> with SingleTickerProviderStateM
                             : Text(item['description'] ?? ''),
                       ),
                     ),
-                    DataCell(Text((item['total_quantity'] ?? 0).toStringAsFixed(1))),
+                    DataCell(Text(quantity.toStringAsFixed(1))),
                     DataCell(Text(item['unit'] ?? '-')),
                     DataCell(Text(priceRange)),
+                    DataCell(Text(grossAmount)),
                     DataCell(Text('${item['occurrences']}')),
                   ]);
                 }).toList(),

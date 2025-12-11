@@ -163,22 +163,46 @@ class _SimpleUploadZoneState extends State<SimpleUploadZone> {
                   const SizedBox(height: 16),
                   
                   // Footer info
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                  Column(
                     children: [
-                      Icon(
-                        Icons.flash_on,
-                        size: 14,
-                        color: Colors.grey.shade500,
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.description,
+                            size: 14,
+                            color: Colors.grey.shade500,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Supported: PDF, JPG, JPEG, PNG',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade500,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 6),
-                      Text(
-                        'Process up to 10 invoices simultaneously',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey.shade500,
-                          fontWeight: FontWeight.w500,
-                        ),
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.flash_on,
+                            size: 14,
+                            color: Colors.grey.shade500,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Process up to 10 invoices simultaneously',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade500,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -213,9 +237,11 @@ class _SimpleUploadZoneState extends State<SimpleUploadZone> {
                             color: const Color(0xFF6366F1).withOpacity(0.1),
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: const Icon(
-                            Icons.picture_as_pdf,
-                            color: Color(0xFF6366F1),
+                          child: Icon(
+                            file.name.toLowerCase().endsWith('.pdf')
+                                ? Icons.picture_as_pdf
+                                : Icons.image,
+                            color: const Color(0xFF6366F1),
                             size: 20,
                           ),
                         ),

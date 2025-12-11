@@ -78,17 +78,21 @@ async def process_single_invoice(file: UploadFile = File(...)):
     """Process a single invoice file.
     
     Args:
-        file: Invoice PDF file to process
+        file: Invoice file to process (PDF or image: jpg, jpeg, png)
         
     Returns:
         Processing result with extracted data
     """
     # Validate file type
-    if not file.filename.lower().endswith('.pdf'):
-        raise HTTPException(status_code=400, detail="Only PDF files are supported")
+    allowed_extensions = ('.pdf', '.jpg', '.jpeg', '.png')
+    if not file.filename.lower().endswith(allowed_extensions):
+        raise HTTPException(status_code=400, detail=f"Only {', '.join(allowed_extensions)} files are supported")
+    
+    # Get file extension for temporary file
+    file_ext = Path(file.filename).suffix
     
     # Create temporary file
-    with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as tmp_file:
+    with tempfile.NamedTemporaryFile(delete=False, suffix=file_ext) as tmp_file:
         tmp_path = Path(tmp_file.name)
         
         # Save uploaded file
@@ -110,7 +114,7 @@ async def process_batch_invoices(files: List[UploadFile] = File(...)):
     """Process multiple invoice files in parallel.
     
     Args:
-        files: List of invoice PDF files to process
+        files: List of invoice files to process (PDF or images: jpg, jpeg, png)
         
     Returns:
         List of processing results and CSV download links
@@ -121,14 +125,20 @@ async def process_batch_invoices(files: List[UploadFile] = File(...)):
     results: List[ProcessingResult] = []
     temp_files: List[Path] = []
     
+    # Allowed file extensions
+    allowed_extensions = ('.pdf', '.jpg', '.jpeg', '.png')
+    
     try:
         # Save all files first
         for file in files:
-            if not file.filename.lower().endswith('.pdf'):
+            if not file.filename.lower().endswith(allowed_extensions):
                 continue
             
+            # Get file extension for temporary file
+            file_ext = Path(file.filename).suffix
+            
             # Create temporary file
-            with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as tmp_file:
+            with tempfile.NamedTemporaryFile(delete=False, suffix=file_ext) as tmp_file:
                 tmp_path = Path(tmp_file.name)
                 temp_files.append(tmp_path)
                 
