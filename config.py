@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     openai_api_key: str = ""
     
     # Model Configuration
-    openai_model: str = "gpt-4o"  # Updated - gpt-4-vision-preview is deprecated
+    openai_model: str = "gpt-4o-2024-11-20"  # Latest GPT-4o with improved vision accuracy
     
     # API Settings
     api_host: str = "127.0.0.1"
