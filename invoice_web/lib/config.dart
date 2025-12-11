@@ -21,6 +21,12 @@ class AppConfig {
   static const String appName = 'Kaso Invoice Analyzer';
   static const String appVersion = '1.0.0';
   
+  // Demo Mode - Show blurred content and fake suppliers
+  static const bool demoMode = bool.fromEnvironment(
+    'DEMO_MODE',
+    defaultValue: false,
+  );
+  
   // Check if running in production
   static bool get isProduction => !apiBaseUrl.contains('localhost');
 }

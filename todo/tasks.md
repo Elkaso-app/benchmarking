@@ -1,3 +1,3 @@
-✅ ~~in helper/invoices.csv will find cv file , the invoice_image contains {invoice_url_1,invoice_url_2..}~~
-✅ ~~we need to create script that loop over the rows and download all invoices and put it in helper/downloaded_invoices , name the invoice with id of record in cv file like id_1 , id_2 for multi invoices in same record , that is it~~
-✅ ~~I will use this script data source for testing~~
+✅ ~~now we need to test the tool on real data:~~
+✅ ~~anything related to demo for faking the result turn of it , make the demo flag = false , and if any other part logic that faking the or manubilating the results ,either make read the flag if it in backend or if it in front and there's no demo flag for it create on , so later maybe I will use the demo mode again , let's turn of it and test and see~~
+✅ ~~check the front too , the blur from front should part of demo~~

@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import '../config.dart';
 
 class LinePriceChart extends StatelessWidget {
   final Map<String, dynamic> costAnalysis;
@@ -89,22 +90,36 @@ class LinePriceChart extends StatelessWidget {
                         padding: const EdgeInsets.only(top: 8.0),
                         child: SizedBox(
                           width: 100,
-                          child: ImageFiltered(
-                            imageFilter: ImageFilter.blur(sigmaX: 4, sigmaY: 4),
-                            child: Transform.rotate(
-                              angle: -0.3,
-                              child: Text(
-                                itemNames[index],
-                                style: const TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w500,
+                          child: AppConfig.demoMode
+                              ? ImageFiltered(
+                                  imageFilter: ImageFilter.blur(sigmaX: 4, sigmaY: 4),
+                                  child: Transform.rotate(
+                                    angle: -0.3,
+                                    child: Text(
+                                      itemNames[index],
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ),
+                                )
+                              : Transform.rotate(
+                                  angle: -0.3,
+                                  child: Text(
+                                    itemNames[index],
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    textAlign: TextAlign.center,
+                                  ),
                                 ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                textAlign: TextAlign.center,
-                              ),
-                            ),
-                          ),
                         ),
                       );
                     },
@@ -221,18 +236,28 @@ class LinePriceChart extends StatelessWidget {
                 children: [
                   SizedBox(
                     width: 120,
-                    child: ImageFiltered(
-                      imageFilter: ImageFilter.blur(sigmaX: 3, sigmaY: 3),
-                      child: Text(
-                        name,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
+                    child: AppConfig.demoMode
+                        ? ImageFiltered(
+                            imageFilter: ImageFilter.blur(sigmaX: 3, sigmaY: 3),
+                            child: Text(
+                              name,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          )
+                        : Text(
+                            name,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                   ),
                   const SizedBox(width: 12),
                   Container(

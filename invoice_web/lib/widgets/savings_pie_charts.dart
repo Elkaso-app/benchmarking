@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import '../config.dart';
 
 class SavingsPieCharts extends StatelessWidget {
   final Map<String, dynamic> costAnalysis;
@@ -212,15 +213,22 @@ class SavingsPieCharts extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: ImageFiltered(
-                  imageFilter: ImageFilter.blur(sigmaX: 3, sigmaY: 3),
-                  child: Text(
-                    name,
-                    style: const TextStyle(fontSize: 12),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
+                child: AppConfig.demoMode
+                    ? ImageFiltered(
+                        imageFilter: ImageFilter.blur(sigmaX: 3, sigmaY: 3),
+                        child: Text(
+                          name,
+                          style: const TextStyle(fontSize: 12),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      )
+                    : Text(
+                        name,
+                        style: const TextStyle(fontSize: 12),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
               ),
             ],
           ),

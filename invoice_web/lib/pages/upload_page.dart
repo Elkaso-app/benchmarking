@@ -13,6 +13,7 @@ import '../widgets/monthly_savings_chart.dart';
 import '../widgets/blurred_suppliers_list.dart';
 import '../widgets/magic_wand_loader.dart';
 import '../widgets/simple_upload_zone.dart';
+import '../config.dart';
 
 class UploadPage extends StatefulWidget {
   const UploadPage({super.key});
@@ -382,10 +383,11 @@ class _UploadPageState extends State<UploadPage> with SingleTickerProviderStateM
               
               const SizedBox(height: 32),
               
-              // 5. Blurred Suppliers List
-              BlurredSuppliersList(itemsList: _masterList),
-              
-              const SizedBox(height: 32),
+              // 5. Blurred Suppliers List (only in demo mode)
+              if (AppConfig.demoMode) ...[
+                BlurredSuppliersList(itemsList: _masterList),
+                const SizedBox(height: 32),
+              ],
               
               // 6. Master List of Items
               if (_masterList != null)
@@ -606,10 +608,12 @@ class _UploadPageState extends State<UploadPage> with SingleTickerProviderStateM
                     DataCell(
                       ConstrainedBox(
                         constraints: const BoxConstraints(maxWidth: 300),
-                        child: ImageFiltered(
-                          imageFilter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
-                          child: Text(item['description'] ?? ''),
-                        ),
+                        child: AppConfig.demoMode
+                            ? ImageFiltered(
+                                imageFilter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+                                child: Text(item['description'] ?? ''),
+                              )
+                            : Text(item['description'] ?? ''),
                       ),
                     ),
                     DataCell(Text((item['total_quantity'] ?? 0).toStringAsFixed(1))),

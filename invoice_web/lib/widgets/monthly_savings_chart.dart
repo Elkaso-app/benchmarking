@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import '../config.dart';
 
 class MonthlySavingsChart extends StatelessWidget {
   final Map<String, dynamic> costAnalysis;
@@ -132,18 +133,28 @@ class MonthlySavingsChart extends StatelessWidget {
                             padding: const EdgeInsets.only(top: 8.0),
                             child: Transform.rotate(
                               angle: -0.3,
-                              child: ImageFiltered(
-                                imageFilter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
-                                child: Text(
-                                  itemNames[index],
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
+                              child: AppConfig.demoMode
+                                  ? ImageFiltered(
+                                      imageFilter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+                                      child: Text(
+                                        itemNames[index],
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    )
+                                  : Text(
+                                      itemNames[index],
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
                             ),
                           );
                         },
@@ -211,16 +222,24 @@ class MonthlySavingsChart extends StatelessWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      ImageFiltered(
-                        imageFilter: ImageFilter.blur(sigmaX: 3, sigmaY: 3),
-                        child: Text(
-                          name,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
+                      AppConfig.demoMode
+                          ? ImageFiltered(
+                              imageFilter: ImageFilter.blur(sigmaX: 3, sigmaY: 3),
+                              child: Text(
+                                name,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            )
+                          : Text(
+                              name,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
                       const SizedBox(width: 8),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
