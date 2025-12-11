@@ -11,7 +11,7 @@ import '../widgets/line_price_chart.dart';
 import '../widgets/savings_pie_charts.dart';
 import '../widgets/monthly_savings_chart.dart';
 import '../widgets/blurred_suppliers_list.dart';
-import '../widgets/gpt_loader.dart';
+import '../widgets/magic_wand_loader.dart';
 import '../widgets/simple_upload_zone.dart';
 
 class UploadPage extends StatefulWidget {
@@ -131,7 +131,7 @@ class _UploadPageState extends State<UploadPage> with SingleTickerProviderStateM
       case 2:
         return 'AI scanning documents...';
       case 3:
-        return 'Extracting data with GPT-4o Vision...';
+        return 'Extracting data from invoices...';
       case 4:
         return 'Analyzing costs and calculating savings...';
       case 5:
@@ -160,9 +160,9 @@ class _UploadPageState extends State<UploadPage> with SingleTickerProviderStateM
           if (_isProcessing) ...[
             const SizedBox(height: 60),
             const Center(
-              child: GPTLoader(
+              child: MagicWandLoader(
                 message: 'AI is processing your invoices...',
-                size: 80,
+                size: 100,
               ),
             ),
             const SizedBox(height: 40),

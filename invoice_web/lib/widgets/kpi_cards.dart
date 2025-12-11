@@ -16,12 +16,23 @@ class KpiCards extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Colors.indigo.shade900, Colors.blue.shade800],
+        gradient: const LinearGradient(
+          colors: [
+            Color(0xFF059669), // Emerald green
+            Color(0xFF10B981), // Green
+            Color(0xFF34D399), // Light green
+          ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF10B981).withOpacity(0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -113,7 +124,7 @@ class KpiCards extends StatelessWidget {
           // Label and Icon
           Row(
             children: [
-              Icon(icon, color: Colors.blue.shade700, size: 24),
+              Icon(icon, color: const Color(0xFF059669), size: 24),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -133,7 +144,7 @@ class KpiCards extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
             decoration: BoxDecoration(
-              color: Colors.green.shade50,
+              color: const Color(0xFFD1FAE5), // Light green/mint background
               borderRadius: BorderRadius.circular(8),
             ),
             child: Row(
@@ -142,10 +153,10 @@ class KpiCards extends StatelessWidget {
               children: [
                 Text(
                   value,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 36,
                     fontWeight: FontWeight.bold,
-                    color: Colors.green.shade700,
+                    color: Color(0xFF047857), // Dark green for better contrast
                   ),
                 ),
                 if (unit.isNotEmpty)
@@ -153,10 +164,10 @@ class KpiCards extends StatelessWidget {
                     padding: const EdgeInsets.only(left: 8, bottom: 4),
                     child: Text(
                       unit,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
-                        color: Colors.green.shade600,
+                        color: Color(0xFF059669), // Emerald green
                       ),
                     ),
                   ),
