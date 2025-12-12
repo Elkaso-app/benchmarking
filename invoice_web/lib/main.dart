@@ -20,15 +20,15 @@ class MyApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
           colorScheme: ColorScheme.fromSeed(
-            seedColor: const Color(0xFF6366F1),
+            seedColor: const Color(0xFFF59E0B), // Yellow/Amber
             brightness: Brightness.light,
           ),
           useMaterial3: true,
-          scaffoldBackgroundColor: const Color(0xFFF8F9FA),
+          scaffoldBackgroundColor: const Color(0xFFFAFAFA),
           cardTheme: CardThemeData(
             elevation: 0,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(12),
             ),
             color: Colors.white,
           ),
@@ -37,7 +37,7 @@ class MyApp extends StatelessWidget {
               elevation: 0,
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(8),
               ),
             ),
           ),
@@ -45,16 +45,16 @@ class MyApp extends StatelessWidget {
             filled: true,
             fillColor: Colors.white,
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(8),
               borderSide: BorderSide(color: Colors.grey[300]!),
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(8),
               borderSide: BorderSide(color: Colors.grey[300]!),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFF6366F1), width: 2),
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: Color(0xFFF59E0B), width: 2),
             ),
           ),
         ),

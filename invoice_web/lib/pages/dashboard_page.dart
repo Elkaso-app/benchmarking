@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../config.dart';
+import 'package:fl_chart/fl_chart.dart';
 
 class DashboardPage extends StatefulWidget {
   final VoidCallback onNavigateToUpload;
@@ -15,245 +15,427 @@ class DashboardPage extends StatefulWidget {
   State<DashboardPage> createState() => _DashboardPageState();
 }
 
-class _DashboardPageState extends State<DashboardPage>
-    with TickerProviderStateMixin {
-  late AnimationController _fadeController;
-  late Animation<double> _fadeAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _fadeController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 800),
-    );
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _fadeController, curve: Curves.easeInOut),
-    );
-    _fadeController.forward();
-  }
-
-  @override
-  void dispose() {
-    _fadeController.dispose();
-    super.dispose();
-  }
-
+class _DashboardPageState extends State<DashboardPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
-      body: FadeTransition(
-        opacity: _fadeAnimation,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(32),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Welcome Section
-              _buildWelcomeSection(),
-              const SizedBox(height: 32),
-              // Stats Cards
-              _buildStatsGrid(),
-              const SizedBox(height: 32),
-              // Quick Actions
-              _buildQuickActions(),
-              const SizedBox(height: 32),
-              // Recent Activity Placeholder
-              _buildRecentActivity(),
-            ],
-          ),
+      backgroundColor: const Color(0xFFFAFAFA),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildHeader(),
+            const SizedBox(height: 32),
+            _buildTopStatsCards(),
+            const SizedBox(height: 32),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                if (constraints.maxWidth < 900) {
+                  // Stack vertically on smaller screens
+                  return Column(
+                    children: [
+                      _buildPriceComparisonChart(),
+                      const SizedBox(height: 24),
+                      _buildAutoNegotiateCard(),
+                      const SizedBox(height: 24),
+                      _buildSupplierTrendsCard(),
+                    ],
+                  );
+                }
+                // Side by side on larger screens
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Flexible(flex: 2, child: _buildPriceComparisonChart()),
+                    const SizedBox(width: 24),
+                    Flexible(
+                      flex: 1,
+                      child: Column(
+                        children: [
+                          _buildAutoNegotiateCard(),
+                          const SizedBox(height: 24),
+                          _buildSupplierTrendsCard(),
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildWelcomeSection() {
-    return Container(
-      padding: const EdgeInsets.all(32),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
-        ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF6366F1).withOpacity(0.3),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Welcome back! 👋',
-                  style: TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  'Manage your invoices and track savings efficiently',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.white.withOpacity(0.9),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                ElevatedButton.icon(
-                  onPressed: widget.onNavigateToUpload,
-                  icon: const Icon(Icons.upload_file_rounded),
-                  label: const Text('Upload Invoice'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: const Color(0xFF6366F1),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 16,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    elevation: 0,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.analytics_rounded,
-              size: 80,
-              color: Colors.white,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatsGrid() {
-    return GridView.count(
-      crossAxisCount: 4,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: 20,
-      crossAxisSpacing: 20,
-      childAspectRatio: 1.5,
+  Widget _buildHeader() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildStatCard(
-          title: 'Total Invoices',
-          value: '0',
-          icon: Icons.receipt_long_rounded,
-          color: const Color(0xFF6366F1),
-          trend: '+0%',
+        Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            const Text(
+              'Price Benchmark Report',
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF1F2937),
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: const Color(0xFFEBF5FF),
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: const Color(0xFF3B82F6)),
+              ),
+              child: const Text(
+                'Beta',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF3B82F6),
+                ),
+              ),
+            ),
+          ],
         ),
-        _buildStatCard(
-          title: 'Total Savings',
-          value: 'AED 0',
-          icon: Icons.trending_up_rounded,
-          color: const Color(0xFF10B981),
-          trend: '+0%',
+        const SizedBox(height: 8),
+        Text(
+          'Based on your latest supplier invoices  •  Generated on Dec 9, 2024',
+          style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+          overflow: TextOverflow.ellipsis,
+          maxLines: 2,
         ),
-        _buildStatCard(
-          title: 'Processed Items',
-          value: '0',
-          icon: Icons.inventory_2_rounded,
-          color: const Color(0xFFF59E0B),
-          trend: '+0%',
-        ),
-        _buildStatCard(
-          title: 'Avg. Processing',
-          value: '0s',
-          icon: Icons.speed_rounded,
-          color: const Color(0xFF8B5CF6),
-          trend: '-0%',
+        const SizedBox(height: 16),
+        Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          alignment: WrapAlignment.end,
+          children: [
+            ElevatedButton.icon(
+              onPressed: () {},
+              icon: const Icon(Icons.picture_as_pdf_outlined, size: 18),
+              label: const Text('Export PDF'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: const Color(0xFF1F2937),
+                side: BorderSide(color: Colors.grey[300]!),
+                elevation: 0,
+              ),
+            ),
+            ElevatedButton.icon(
+              onPressed: () {},
+              icon: const Icon(Icons.auto_awesome, size: 18),
+              label: const Text('Auto-Negotiate'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF10B981),
+                foregroundColor: Colors.white,
+                elevation: 0,
+              ),
+            ),
+          ],
         ),
       ],
+    );
+  }
+
+  Widget _buildTopStatsCards() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Row(
+          children: [
+            Flexible(
+              flex: 1,
+              child: _buildStatCard(
+                title: 'Total Monthly Savings Potential',
+                value: 'AED 3,420',
+                subtitle: '+18% from last month based on volume',
+                icon: Icons.trending_up,
+                iconColor: const Color(0xFF10B981),
+                hasProgressBar: false,
+              ),
+            ),
+            const SizedBox(width: 24),
+            Flexible(
+              flex: 1,
+              child: _buildStatCard(
+                title: 'Average Saving per Item',
+                value: '12%',
+                subtitle: 'Across 25 benchmarked items',
+                icon: Icons.help_outline,
+                iconColor: Colors.grey[400]!,
+                hasProgressBar: true,
+                progressValue: 0.12,
+              ),
+            ),
+            const SizedBox(width: 24),
+            Flexible(
+              flex: 1,
+              child: _buildStatCard(
+                title: 'Items Overpriced',
+                value: '8 /25',
+                subtitle: 'paying >10% above market average',
+                icon: Icons.error_outline,
+                iconColor: const Color(0xFFEF4444),
+                hasProgressBar: false,
+                showDots: true,
+                totalDots: 25,
+                filledDots: 8,
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
   Widget _buildStatCard({
     required String title,
     required String value,
+    required String subtitle,
     required IconData icon,
-    required Color color,
-    required String trend,
+    required Color iconColor,
+    bool hasProgressBar = false,
+    double progressValue = 0.0,
+    bool showDots = false,
+    int totalDots = 0,
+    int filledDots = 0,
   }) {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Flexible(
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.grey[600],
+                    fontWeight: FontWeight.w500,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Icon(icon, size: 18, color: iconColor),
+            ],
           ),
+          const SizedBox(height: 12),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              value,
+              style: const TextStyle(
+                fontSize: 32,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF1F2937),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            subtitle,
+            style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+          if (hasProgressBar) ...[
+            const SizedBox(height: 12),
+            LinearProgressIndicator(
+              value: progressValue,
+              backgroundColor: const Color(0xFFE5E7EB),
+              valueColor: const AlwaysStoppedAnimation(Color(0xFF10B981)),
+              minHeight: 6,
+              borderRadius: BorderRadius.circular(3),
+            ),
+          ],
+          if (showDots) ...[
+            const SizedBox(height: 12),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: List.generate(totalDots, (index) {
+                  return Container(
+                    width: 8,
+                    height: 8,
+                    margin: const EdgeInsets.only(right: 4),
+                    decoration: BoxDecoration(
+                      color: index < filledDots
+                          ? const Color(0xFFEF4444)
+                          : const Color(0xFFE5E7EB),
+                      shape: BoxShape.circle,
+                    ),
+                  );
+                }),
+              ),
+            ),
+          ],
         ],
+      ),
+    );
+  }
+
+  Widget _buildPriceComparisonChart() {
+    final items = [
+      {'name': 'Chicken Breast', 'yourPrice': 18.0, 'benchmark': 15.0},
+      {'name': 'Olive Oil (5L)', 'yourPrice': 180.0, 'benchmark': 155.0},
+      {'name': 'Basmati Rice', 'yourPrice': 42.0, 'benchmark': 38.0},
+      {'name': 'Tomatoes (kg)', 'yourPrice': 5.5, 'benchmark': 5.2},
+      {'name': 'Cheddar Cheese', 'yourPrice': 32.0, 'benchmark': 30.0},
+      {'name': 'Black Angus', 'yourPrice': 115.0, 'benchmark': 125.0},
+    ];
+
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(icon, color: color, size: 24),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF10B981).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  trend,
-                  style: const TextStyle(
-                    color: Color(0xFF10B981),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const Spacer(),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 28,
+          const Text(
+            'Price Comparison',
+            style: TextStyle(
+              fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF1A1A1A),
+              color: Color(0xFF1F2937),
             ),
           ),
           const SizedBox(height: 4),
           Text(
-            title,
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey[600],
-              fontWeight: FontWeight.w500,
+            'Your current unit prices vs. Kaso market benchmark',
+            style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+          ),
+          const SizedBox(height: 24),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _buildLegendItem('Your Price', const Color(0xFFFBBF24)),
+              const SizedBox(width: 24),
+              _buildLegendItem('Benchmark Price', const Color(0xFF1E3A8A)),
+            ],
+          ),
+          const SizedBox(height: 24),
+          SizedBox(
+            height: 400,
+            child: BarChart(
+              BarChartData(
+                alignment: BarChartAlignment.spaceAround,
+                maxY: 200,
+                barTouchData: BarTouchData(enabled: false),
+                titlesData: FlTitlesData(
+                  show: true,
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      getTitlesWidget: (value, meta) {
+                        if (value.toInt() >= 0 &&
+                            value.toInt() < items.length) {
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 8),
+                            child: Text(
+                              items[value.toInt()]['name'] as String,
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Colors.grey[600],
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          );
+                        }
+                        return const Text('');
+                      },
+                    ),
+                  ),
+                  leftTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      getTitlesWidget: (value, meta) {
+                        return Text(
+                          'AED ${value.toInt()}',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.grey[600],
+                          ),
+                        );
+                      },
+                      reservedSize: 50,
+                      interval: 45,
+                    ),
+                  ),
+                  topTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  rightTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                ),
+                gridData: FlGridData(
+                  show: true,
+                  drawVerticalLine: false,
+                  horizontalInterval: 45,
+                  getDrawingHorizontalLine: (value) {
+                    return FlLine(
+                      color: const Color(0xFFF3F4F6),
+                      strokeWidth: 1,
+                    );
+                  },
+                ),
+                borderData: FlBorderData(
+                  show: true,
+                  border: Border(
+                    left: BorderSide(color: Colors.grey[300]!),
+                    bottom: BorderSide(color: Colors.grey[300]!),
+                  ),
+                ),
+                barGroups: items.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final item = entry.value;
+                  final yourPrice = item['yourPrice'] as double;
+                  final benchmark = item['benchmark'] as double;
+
+                  return BarChartGroupData(
+                    x: index,
+                    barsSpace: 4,
+                    barRods: [
+                      BarChartRodData(
+                        toY: yourPrice,
+                        color: const Color(0xFFFBBF24),
+                        width: 32,
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(4),
+                        ),
+                      ),
+                      BarChartRodData(
+                        toY: benchmark,
+                        color: const Color(0xFF1E3A8A),
+                        width: 32,
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(4),
+                        ),
+                      ),
+                    ],
+                  );
+                }).toList(),
+              ),
             ),
           ),
         ],
@@ -261,162 +443,148 @@ class _DashboardPageState extends State<DashboardPage>
     );
   }
 
-  Widget _buildQuickActions() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildLegendItem(String label, Color color) {
+    return Row(
       children: [
-        const Text(
-          'Quick Actions',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF1A1A1A),
-          ),
+        Container(
+          width: 12,
+          height: 12,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: _buildActionCard(
-                title: 'Upload New Invoice',
-                description: 'Process and analyze invoices',
-                icon: Icons.upload_file_rounded,
-                color: const Color(0xFF6366F1),
-                onTap: widget.onNavigateToUpload,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: _buildActionCard(
-                title: 'View Reports',
-                description: 'Access detailed analytics',
-                icon: Icons.analytics_rounded,
-                color: const Color(0xFF10B981),
-                onTap: widget.onNavigateToReports,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: _buildActionCard(
-                title: 'Export Data',
-                description: 'Download CSV reports',
-                icon: Icons.download_rounded,
-                color: const Color(0xFFF59E0B),
-                onTap: () {},
-              ),
-            ),
-          ],
+        const SizedBox(width: 8),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 13,
+            color: Colors.grey[700],
+            fontWeight: FontWeight.w500,
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildActionCard({
-    required String title,
-    required String description,
-    required IconData icon,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: color.withOpacity(0.2)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(icon, color: color, size: 28),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF1A1A1A),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              description,
-              style: TextStyle(fontSize: 13, color: Colors.grey[600]),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildRecentActivity() {
+  Widget _buildAutoNegotiateCard() {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF1E3A8A), Color(0xFF1E40AF)],
+        ),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              const Text(
-                'Recent Activity',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF1A1A1A),
-                ),
-              ),
-              const Spacer(),
-              TextButton(onPressed: () {}, child: const Text('View All')),
-            ],
+          const Text(
+            'Automate your savings',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
           ),
-          const SizedBox(height: 20),
-          Center(
-            child: Column(
-              children: [
-                Icon(
-                  Icons.hourglass_empty_rounded,
-                  size: 64,
-                  color: Colors.grey[300],
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'No recent activity',
-                  style: TextStyle(fontSize: 16, color: Colors.grey[600]),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Upload an invoice to get started',
-                  style: TextStyle(fontSize: 14, color: Colors.grey[500]),
-                ),
-              ],
+          const SizedBox(height: 12),
+          const Text(
+            'We can negotiate better prices with your suppliers automatically using our AI-driven RFQ engine.',
+            style: TextStyle(fontSize: 13, color: Colors.white70, height: 1.5),
+          ),
+          const SizedBox(height: 24),
+          _buildStep('1', 'Select items to renegotiate'),
+          const SizedBox(height: 12),
+          _buildStep('2', 'AI contacts suppliers'),
+          const SizedBox(height: 12),
+          _buildStep('3', 'You approve the best offer'),
+          const SizedBox(height: 24),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () {},
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: const Color(0xFF1E3A8A),
+                padding: const EdgeInsets.symmetric(vertical: 16),
+              ),
+              child: const Text(
+                'Activate Auto-RFQ',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStep(String number, String text) {
+    return Row(
+      children: [
+        Container(
+          width: 24,
+          height: 24,
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.2),
+            shape: BoxShape.circle,
+          ),
+          child: Center(
+            child: Text(
+              number,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Text(text, style: const TextStyle(fontSize: 14, color: Colors.white)),
+      ],
+    );
+  }
+
+  Widget _buildSupplierTrendsCard() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+      ),
+      child: Column(
+        children: [
+          const Icon(Icons.trending_up, size: 48, color: Color(0xFFE5E7EB)),
+          const SizedBox(height: 16),
+          const Text(
+            'Supplier Trends',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF1F2937),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Compare price history across your top 3 suppliers',
+            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF3F4F6),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text(
+              'Coming Soon',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey[600],
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
         ],
