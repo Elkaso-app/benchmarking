@@ -22,7 +22,8 @@ class UploadPage extends StatefulWidget {
   State<UploadPage> createState() => _UploadPageState();
 }
 
-class _UploadPageState extends State<UploadPage> with SingleTickerProviderStateMixin {
+class _UploadPageState extends State<UploadPage>
+    with SingleTickerProviderStateMixin {
   List<PlatformFile>? _selectedFiles;
   bool _isProcessing = false;
   BenchmarkResult? _result;
@@ -86,17 +87,17 @@ class _UploadPageState extends State<UploadPage> with SingleTickerProviderStateM
       // Simulate processing stages for better UX
       _updateStage(1); // Uploading
       await Future.delayed(const Duration(milliseconds: 500));
-      
+
       _updateStage(2); // AI scanning
       await Future.delayed(const Duration(milliseconds: 500));
-      
+
       _updateStage(3); // Extracting data
       final apiService = context.read<ApiService>();
       final response = await apiService.processBatchInvoices(_selectedFiles!);
-      
+
       _updateStage(4); // Analyzing costs
       await Future.delayed(const Duration(milliseconds: 500));
-      
+
       _updateStage(5); // Complete
       await Future.delayed(const Duration(milliseconds: 300));
 
@@ -106,10 +107,9 @@ class _UploadPageState extends State<UploadPage> with SingleTickerProviderStateM
         _masterList = response.masterList;
         _isProcessing = false;
       });
-      
+
       // Trigger success animation
       _successController.forward();
-      
     } catch (e) {
       setState(() {
         _error = e.toString();
@@ -193,10 +193,7 @@ class _UploadPageState extends State<UploadPage> with SingleTickerProviderStateM
                   const SizedBox(height: 12),
                   Text(
                     _getProcessingMessage(_processingStage),
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey.shade600,
-                    ),
+                    style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
                   ),
                 ],
               ),
@@ -215,7 +212,11 @@ class _UploadPageState extends State<UploadPage> with SingleTickerProviderStateM
               ),
               child: Row(
                 children: [
-                  Icon(Icons.error_outline, color: Colors.red.shade700, size: 28),
+                  Icon(
+                    Icons.error_outline,
+                    color: Colors.red.shade700,
+                    size: 28,
+                  ),
                   const SizedBox(width: 16),
                   Expanded(
                     child: Column(
@@ -270,7 +271,11 @@ class _UploadPageState extends State<UploadPage> with SingleTickerProviderStateM
                       ),
                       child: const Row(
                         children: [
-                          Icon(Icons.check_circle, color: Colors.white, size: 32),
+                          Icon(
+                            Icons.check_circle,
+                            color: Colors.white,
+                            size: 32,
+                          ),
                           SizedBox(width: 16),
                           Expanded(
                             child: Column(
@@ -295,7 +300,11 @@ class _UploadPageState extends State<UploadPage> with SingleTickerProviderStateM
                               ],
                             ),
                           ),
-                          Icon(Icons.auto_awesome, color: Colors.white, size: 28),
+                          Icon(
+                            Icons.auto_awesome,
+                            color: Colors.white,
+                            size: 28,
+                          ),
                         ],
                       ),
                     ),
@@ -305,18 +314,18 @@ class _UploadPageState extends State<UploadPage> with SingleTickerProviderStateM
             ),
             const SizedBox(height: 32),
             _buildResultsSummary(),
-            
+
             // Only show analysis if we have data from server
             if (_costAnalysis != null) ...[
               const SizedBox(height: 40),
               const Divider(thickness: 2),
               const SizedBox(height: 32),
-              
+
               // 1. KPI Cards with big green numbers (Overview section)
               KpiCards(costAnalysis: _costAnalysis!),
-              
+
               const SizedBox(height: 32),
-              
+
               // 2. Bar Chart - Current Price vs Market Price per Unit
               Card(
                 elevation: 2,
@@ -326,7 +335,10 @@ class _UploadPageState extends State<UploadPage> with SingleTickerProviderStateM
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 8,
+                          horizontal: 16,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.grey.shade50,
                           borderRadius: BorderRadius.circular(8),
@@ -344,8 +356,11 @@ class _UploadPageState extends State<UploadPage> with SingleTickerProviderStateM
                             ),
                             const SizedBox(width: 8),
                             const Text(
-                              'Your current price (SAR)',
-                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+                              'Your current price (AED)',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
                             const SizedBox(width: 24),
                             Container(
@@ -358,8 +373,11 @@ class _UploadPageState extends State<UploadPage> with SingleTickerProviderStateM
                             ),
                             const SizedBox(width: 8),
                             const Text(
-                              'Kaso market price (est) (SAR)',
-                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+                              'Kaso market price (est) (AED)',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
                           ],
                         ),
@@ -370,28 +388,27 @@ class _UploadPageState extends State<UploadPage> with SingleTickerProviderStateM
                   ),
                 ),
               ),
-              
+
               const SizedBox(height: 32),
-              
+
               // 3. Two Pie Charts Side by Side
               SavingsPieCharts(costAnalysis: _costAnalysis!),
-              
+
               const SizedBox(height: 32),
-              
+
               // 4. Bottom Bar Chart - Monthly Savings per Item
               MonthlySavingsChart(costAnalysis: _costAnalysis!),
-              
+
               const SizedBox(height: 32),
-              
+
               // 5. Blurred Suppliers List (only in demo mode)
               if (AppConfig.demoMode) ...[
                 BlurredSuppliersList(itemsList: _masterList),
                 const SizedBox(height: 32),
               ],
-              
+
               // 6. Master List of Items
-              if (_masterList != null)
-                _buildMasterList(),
+              if (_masterList != null) _buildMasterList(),
             ],
           ],
         ],
@@ -409,10 +426,7 @@ class _UploadPageState extends State<UploadPage> with SingleTickerProviderStateM
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              Colors.white,
-              Colors.blue.shade50.withOpacity(0.3),
-            ],
+            colors: [Colors.white, Colors.blue.shade50.withOpacity(0.3)],
           ),
           borderRadius: BorderRadius.circular(16),
         ),
@@ -437,10 +451,7 @@ class _UploadPageState extends State<UploadPage> with SingleTickerProviderStateM
                 const SizedBox(width: 12),
                 const Text(
                   'Processing Summary',
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
@@ -556,14 +567,14 @@ class _UploadPageState extends State<UploadPage> with SingleTickerProviderStateM
                 const SizedBox(width: 12),
                 const Text(
                   'Master List - All Items',
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                 ),
                 const Spacer(),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFF1A237E).withOpacity(0.1),
                     borderRadius: BorderRadius.circular(20),
@@ -584,54 +595,95 @@ class _UploadPageState extends State<UploadPage> with SingleTickerProviderStateM
               scrollDirection: Axis.horizontal,
               child: DataTable(
                 columnSpacing: 32,
-                headingRowColor: MaterialStateProperty.all(const Color(0xFF1A237E).withOpacity(0.05)),
+                headingRowColor: MaterialStateProperty.all(
+                  const Color(0xFF1A237E).withOpacity(0.05),
+                ),
                 columns: const [
-                  DataColumn(label: Text('Item', style: TextStyle(fontWeight: FontWeight.bold))),
-                  DataColumn(label: Text('Quantity', style: TextStyle(fontWeight: FontWeight.bold)), numeric: true),
-                  DataColumn(label: Text('Unit', style: TextStyle(fontWeight: FontWeight.bold))),
-                  DataColumn(label: Text('Price Range', style: TextStyle(fontWeight: FontWeight.bold))),
-                  DataColumn(label: Text('Gross Amount', style: TextStyle(fontWeight: FontWeight.bold)), numeric: true),
-                  DataColumn(label: Text('Count', style: TextStyle(fontWeight: FontWeight.bold)), numeric: true),
+                  DataColumn(
+                    label: Text(
+                      'Item',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  DataColumn(
+                    label: Text(
+                      'Quantity',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    numeric: true,
+                  ),
+                  DataColumn(
+                    label: Text(
+                      'Unit',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  DataColumn(
+                    label: Text(
+                      'Price Range',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  DataColumn(
+                    label: Text(
+                      'Gross Amount',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    numeric: true,
+                  ),
+                  DataColumn(
+                    label: Text(
+                      'Count',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    numeric: true,
+                  ),
                 ],
                 rows: _masterList!.map((item) {
                   final priceMin = item['price_min'];
                   final priceMax = item['price_max'];
                   final quantity = (item['total_quantity'] ?? 0).toDouble();
-                  
+
                   String priceRange = '-';
                   String grossAmount = '-';
-                  
+
                   if (priceMin != null && priceMax != null) {
                     if (priceMin == priceMax) {
                       priceRange = priceMin.toStringAsFixed(2);
                     } else {
-                      priceRange = '[${priceMin.toStringAsFixed(2)}, ${priceMax.toStringAsFixed(2)}]';
+                      priceRange =
+                          '[${priceMin.toStringAsFixed(2)}, ${priceMax.toStringAsFixed(2)}]';
                     }
-                    
+
                     // Calculate gross amount: quantity × average price
                     final avgPrice = (priceMin + priceMax) / 2;
                     final gross = quantity * avgPrice;
                     grossAmount = gross.toStringAsFixed(2);
                   }
-                  
-                  return DataRow(cells: [
-                    DataCell(
-                      ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 300),
-                        child: AppConfig.demoMode
-                            ? ImageFiltered(
-                                imageFilter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
-                                child: Text(item['description'] ?? ''),
-                              )
-                            : Text(item['description'] ?? ''),
+
+                  return DataRow(
+                    cells: [
+                      DataCell(
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 300),
+                          child: AppConfig.demoMode
+                              ? ImageFiltered(
+                                  imageFilter: ImageFilter.blur(
+                                    sigmaX: 5,
+                                    sigmaY: 5,
+                                  ),
+                                  child: Text(item['description'] ?? ''),
+                                )
+                              : Text(item['description'] ?? ''),
+                        ),
                       ),
-                    ),
-                    DataCell(Text(quantity.toStringAsFixed(1))),
-                    DataCell(Text(item['unit'] ?? '-')),
-                    DataCell(Text(priceRange)),
-                    DataCell(Text(grossAmount)),
-                    DataCell(Text('${item['occurrences']}')),
-                  ]);
+                      DataCell(Text(quantity.toStringAsFixed(1))),
+                      DataCell(Text(item['unit'] ?? '-')),
+                      DataCell(Text(priceRange)),
+                      DataCell(Text(grossAmount)),
+                      DataCell(Text('${item['occurrences']}')),
+                    ],
+                  );
                 }).toList(),
               ),
             ),
