@@ -37,7 +37,7 @@ load_dotenv()
 # ==================== CONFIGURATION ====================
 
 # Restaurant and date filter
-RESTAURANT_ID = 8178
+RESTAURANT_ID = 7503
 START_DATE = '2025-10-01 00:00:00'
 
 # Processing limits
@@ -81,6 +81,7 @@ def fetch_unprocessed_orders(conn) -> List[Dict]:
         o.restaurant_id = %s
         AND o.created_at >= %s
         AND o.invoice_image IS NOT NULL
+        AND array_length(o.invoice_image, 1) > 0
         AND NOT EXISTS (
             SELECT 1 
             FROM benchmarking.invoice_items ii 
