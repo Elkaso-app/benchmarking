@@ -13,8 +13,8 @@ def merge_invoices():
     
     # Setup paths
     script_dir = Path(__file__).parent
-    output_dir = script_dir / "output"
-    merge_dir = script_dir / "merge"
+    output_dir = script_dir / "invoices/8576/output"
+    merge_dir = script_dir / "invoices/8576/merge"
     
     # Create merge directory
     merge_dir.mkdir(exist_ok=True)

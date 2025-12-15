@@ -13,8 +13,8 @@ from urllib.parse import urlparse
 import time
 
 # Configuration
-CSV_PATH = "helper/invoices.csv"
-OUTPUT_DIR = "helper/downloaded_invoices"
+CSV_PATH = "helper/invoices/8178/invoices.csv"
+OUTPUT_DIR = "helper/invoices/8178/input"
 REQUEST_TIMEOUT = 30
 RETRY_COUNT = 3
 DELAY_BETWEEN_REQUESTS = 0.5  # seconds

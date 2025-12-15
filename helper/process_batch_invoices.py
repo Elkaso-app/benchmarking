@@ -17,8 +17,8 @@ from invoice_processor import InvoiceProcessor
 from models import ProcessingResult
 
 # Configuration
-INVOICES_DIR = Path(__file__).parent / "downloaded_invoices"
-OUTPUT_DIR = Path(__file__).parent / "output"
+INVOICES_DIR = Path(__file__).parent / "invoices/8576/input"
+OUTPUT_DIR = Path(__file__).parent / "invoices/8576/output"
 MAX_INVOICES = 100
 
 
