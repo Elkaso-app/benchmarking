@@ -145,64 +145,67 @@ def insert_invoice_items(conn, order_id: int, items: List[InvoiceItem], llm_mode
 
 # ==================== IMAGE PROCESSING ====================
 
-def download_image_from_s3(url: str) -> Optional[bytes]:
+def download_file_from_s3(url: str) -> Optional[Tuple[bytes, str]]:
     """
-    Download image from S3 URL and convert to supported format.
+    Download file from S3 URL (supports both images and PDFs).
     
     Args:
         url: S3 URL
         
     Returns:
-        Image bytes in JPEG format or None if failed
+        Tuple of (file_bytes, extension) or None if failed
     """
     try:
-        from PIL import Image
-        from io import BytesIO
-        
         response = requests.get(url, timeout=REQUEST_TIMEOUT)
         response.raise_for_status()
         
         # Check size
         content_length = len(response.content)
         if content_length > MAX_IMAGE_SIZE_MB * 1024 * 1024:
-            print(f"  ⚠️  Image too large: {content_length / 1024 / 1024:.1f}MB")
+            print(f"  ⚠️  File too large: {content_length / 1024 / 1024:.1f}MB")
             return None
         
-        # Convert image to JPEG format (supported by OpenAI)
-        try:
-            img = Image.open(BytesIO(response.content))
-            
-            # Convert RGBA to RGB if needed
-            if img.mode in ('RGBA', 'LA', 'P'):
-                background = Image.new('RGB', img.size, (255, 255, 255))
-                if img.mode == 'P':
-                    img = img.convert('RGBA')
-                background.paste(img, mask=img.split()[-1] if img.mode in ('RGBA', 'LA') else None)
-                img = background
-            elif img.mode != 'RGB':
-                img = img.convert('RGB')
-            
-            # Save as JPEG
-            output = BytesIO()
-            img.save(output, format='JPEG', quality=95)
-            return output.getvalue()
-            
-        except Exception as convert_error:
-            print(f"  ⚠️  Image conversion failed: {convert_error}")
-            # If conversion fails, return original bytes
-            return response.content
-            
+        # Determine file extension from URL or content-type
+        extension = 'jpg'  # default
+        url_lower = url.lower()
+        
+        if '.pdf' in url_lower or url.endswith('.pdf'):
+            extension = 'pdf'
+        elif '.png' in url_lower:
+            extension = 'png'
+        elif '.jpeg' in url_lower or '.jpg' in url_lower:
+            extension = 'jpg'
+        elif '.webp' in url_lower:
+            extension = 'webp'
+        elif '.gif' in url_lower:
+            extension = 'gif'
+        else:
+            # Try to detect from content-type header
+            content_type = response.headers.get('content-type', '').lower()
+            if 'pdf' in content_type:
+                extension = 'pdf'
+            elif 'png' in content_type:
+                extension = 'png'
+            elif 'jpeg' in content_type or 'jpg' in content_type:
+                extension = 'jpg'
+            elif 'webp' in content_type:
+                extension = 'webp'
+            elif 'gif' in content_type:
+                extension = 'gif'
+        
+        return (response.content, extension)
+        
     except Exception as e:
         print(f"  ❌ Download failed: {e}")
         return None
 
 
-def save_temp_image(image_bytes: bytes, extension: str = 'jpg') -> Optional[Path]:
+def save_temp_file(file_bytes: bytes, extension: str = 'jpg') -> Optional[Path]:
     """
-    Save image bytes to temporary file.
+    Save file bytes to temporary file.
     
     Args:
-        image_bytes: Image bytes
+        file_bytes: File bytes (image or PDF)
         extension: File extension
         
     Returns:
@@ -213,7 +216,7 @@ def save_temp_image(image_bytes: bytes, extension: str = 'jpg') -> Optional[Path
             delete=False, 
             suffix=f'.{extension}'
         )
-        temp_file.write(image_bytes)
+        temp_file.write(file_bytes)
         temp_file.close()
         return Path(temp_file.name)
     except Exception as e:
@@ -272,13 +275,16 @@ def process_single_order(
         for idx, url in enumerate(invoice_urls, 1):
             print(f"   📄 Invoice {idx}/{len(invoice_urls)}: {url[:80]}...")
             
-            # Download image
-            image_bytes = download_image_from_s3(url)
-            if not image_bytes:
+            # Download file (image or PDF)
+            result = download_file_from_s3(url)
+            if not result:
                 return (order_id, 0, f"Failed to download invoice {idx}")
             
-            # Save as JPEG (we already converted it)
-            temp_path = save_temp_image(image_bytes, 'jpg')
+            file_bytes, extension = result
+            print(f"      📎 File type: {extension.upper()}")
+            
+            # Save to temp file
+            temp_path = save_temp_file(file_bytes, extension)
             if not temp_path:
                 return (order_id, 0, f"Failed to save invoice {idx} to temp file")
             
