@@ -21,7 +21,7 @@ Edit the constants in `process_db_orders.py`:
 
 ```python
 # Restaurant and date filter
-RESTAURANT_ID = 8178
+RESTAURANT_IDS = [7503, 8178]  # List of restaurant IDs to process
 START_DATE = '2025-10-01 00:00:00'
 
 # Processing limits
@@ -77,7 +77,7 @@ python helper/process_db_orders.py
 SELECT id as "order_id", invoice_image, created_at
 FROM orders
 WHERE
-    restaurant_id = 8178
+    restaurant_id = ANY(ARRAY[7503, 8178])
     AND created_at >= '2025-10-01 00:00:00'
     AND invoice_image IS NOT NULL
     AND NOT EXISTS (
