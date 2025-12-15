@@ -80,9 +80,9 @@ class _HomePageState extends State<HomePage>
   Widget _buildTopNavigationBar() {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF1E3A8A), // Navy blue
         border: Border(
-          bottom: BorderSide(color: const Color(0xFFE5E7EB), width: 1),
+          bottom: BorderSide(color: const Color(0xFF1E3A8A), width: 1),
         ),
       ),
       child: Column(
@@ -97,7 +97,7 @@ class _HomePageState extends State<HomePage>
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFBBF24),
+                    color: const Color(0xFFE53E51),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Icon(
@@ -110,7 +110,7 @@ class _HomePageState extends State<HomePage>
                 const Text(
                   AppConfig.appName,
                   style: TextStyle(
-                    color: Color(0xFF1F2937),
+                    color: Colors.white,
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
@@ -185,8 +185,8 @@ class _HomePageState extends State<HomePage>
                   onPressed: _checkBackendHealth,
                   tooltip: 'Refresh connection',
                   style: IconButton.styleFrom(
-                    backgroundColor: const Color(0xFFF3F4F6),
-                    foregroundColor: const Color(0xFF6B7280),
+                    backgroundColor: Colors.white.withOpacity(0.1),
+                    foregroundColor: Colors.white,
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -197,7 +197,7 @@ class _HomePageState extends State<HomePage>
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF3F4F6),
+                    color: Colors.white.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Row(
@@ -208,7 +208,7 @@ class _HomePageState extends State<HomePage>
                         radius: 14,
                         child: Icon(
                           Icons.person_rounded,
-                          color: Colors.grey[600],
+                          color: const Color(0xFF1E3A8A),
                           size: 16,
                         ),
                       ),
@@ -220,7 +220,7 @@ class _HomePageState extends State<HomePage>
                           Text(
                             'Admin',
                             style: TextStyle(
-                              color: const Color(0xFF1F2937),
+                              color: Colors.white,
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
                             ),
@@ -256,15 +256,15 @@ class _HomePageState extends State<HomePage>
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           decoration: BoxDecoration(
             color: isSelected
-                ? const Color(0xFFFEF3C7)
+                ? Colors.white.withOpacity(0.15)
                 : isHovered
-                ? const Color(0xFFF3F4F6)
+                ? Colors.white.withOpacity(0.1)
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(8),
             border: isSelected
                 ? Border(
                     bottom: BorderSide(
-                      color: const Color(0xFFFBBF24),
+                      color: const Color(0xFFE53E51),
                       width: 2,
                     ),
                   )
@@ -276,8 +276,8 @@ class _HomePageState extends State<HomePage>
               Icon(
                 icon,
                 color: isSelected
-                    ? const Color(0xFFD97706)
-                    : const Color(0xFF6B7280),
+                    ? Colors.white
+                    : Colors.white.withOpacity(0.7),
                 size: 20,
               ),
               const SizedBox(width: 8),
@@ -285,8 +285,8 @@ class _HomePageState extends State<HomePage>
                 label,
                 style: TextStyle(
                   color: isSelected
-                      ? const Color(0xFFD97706)
-                      : const Color(0xFF6B7280),
+                      ? Colors.white
+                      : Colors.white.withOpacity(0.7),
                   fontSize: 14,
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                 ),

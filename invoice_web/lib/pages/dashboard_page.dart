@@ -38,8 +38,6 @@ class _DashboardPageState extends State<DashboardPage> {
                       _buildPriceComparisonChart(),
                       const SizedBox(height: 24),
                       _buildAutoNegotiateCard(),
-                      const SizedBox(height: 24),
-                      _buildSupplierTrendsCard(),
                     ],
                   );
                 }
@@ -49,20 +47,13 @@ class _DashboardPageState extends State<DashboardPage> {
                   children: [
                     Flexible(flex: 2, child: _buildPriceComparisonChart()),
                     const SizedBox(width: 24),
-                    Flexible(
-                      flex: 1,
-                      child: Column(
-                        children: [
-                          _buildAutoNegotiateCard(),
-                          const SizedBox(height: 24),
-                          _buildSupplierTrendsCard(),
-                        ],
-                      ),
-                    ),
+                    Flexible(flex: 1, child: _buildAutoNegotiateCard()),
                   ],
                 );
               },
             ),
+            const SizedBox(height: 32),
+            _buildItemizedSavingsTable(),
           ],
         ),
       ),
@@ -301,6 +292,26 @@ class _DashboardPageState extends State<DashboardPage> {
       {'name': 'Black Angus', 'yourPrice': 115.0, 'benchmark': 125.0},
     ];
 
+    // Calculate totals for the "Total" bar
+    double totalYourPrice = items.fold(
+      0,
+      (sum, item) => sum + (item['yourPrice'] as double),
+    );
+    double totalBenchmark = items.fold(
+      0,
+      (sum, item) => sum + (item['benchmark'] as double),
+    );
+
+    // Add total as the first item
+    final itemsWithTotal = [
+      {
+        'name': 'Total',
+        'yourPrice': totalYourPrice,
+        'benchmark': totalBenchmark,
+      },
+      ...items,
+    ];
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -328,9 +339,9 @@ class _DashboardPageState extends State<DashboardPage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _buildLegendItem('Your Price', const Color(0xFFFBBF24)),
+              _buildLegendItem('Your Price', const Color(0xFFE53E51)),
               const SizedBox(width: 24),
-              _buildLegendItem('Benchmark Price', const Color(0xFF1E3A8A)),
+              _buildLegendItem('Kaso Benchmark Price', const Color(0xFF1E3A8A)),
             ],
           ),
           const SizedBox(height: 24),
@@ -339,8 +350,36 @@ class _DashboardPageState extends State<DashboardPage> {
             child: BarChart(
               BarChartData(
                 alignment: BarChartAlignment.spaceAround,
-                maxY: 200,
-                barTouchData: BarTouchData(enabled: false),
+                maxY: (totalYourPrice * 1.1).ceilToDouble(),
+                barTouchData: BarTouchData(
+                  enabled: true,
+                  touchTooltipData: BarTouchTooltipData(
+                    getTooltipColor: (group) => const Color(0xFF1F2937),
+                    tooltipPadding: const EdgeInsets.all(8),
+                    tooltipMargin: 8,
+                    getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                      final item = itemsWithTotal[group.x.toInt()];
+                      final yourPrice = item['yourPrice'] as double;
+                      final benchmark = item['benchmark'] as double;
+                      final percentDiff =
+                          ((yourPrice - benchmark) / benchmark * 100);
+                      final isYourPrice = rodIndex == 0;
+                      final value = isYourPrice ? yourPrice : benchmark;
+                      final label = isYourPrice
+                          ? 'Your Price'
+                          : 'Kaso Benchmark';
+
+                      return BarTooltipItem(
+                        '$label\nAED ${value.toStringAsFixed(1)}\n${percentDiff >= 0 ? '+' : ''}${percentDiff.toStringAsFixed(1)}%',
+                        const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
+                      );
+                    },
+                  ),
+                ),
                 titlesData: FlTitlesData(
                   show: true,
                   bottomTitles: AxisTitles(
@@ -348,14 +387,17 @@ class _DashboardPageState extends State<DashboardPage> {
                       showTitles: true,
                       getTitlesWidget: (value, meta) {
                         if (value.toInt() >= 0 &&
-                            value.toInt() < items.length) {
+                            value.toInt() < itemsWithTotal.length) {
                           return Padding(
                             padding: const EdgeInsets.only(top: 8),
                             child: Text(
-                              items[value.toInt()]['name'] as String,
+                              itemsWithTotal[value.toInt()]['name'] as String,
                               style: TextStyle(
                                 fontSize: 11,
                                 color: Colors.grey[600],
+                                fontWeight: value.toInt() == 0
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
                               ),
                               textAlign: TextAlign.center,
                             ),
@@ -378,7 +420,7 @@ class _DashboardPageState extends State<DashboardPage> {
                         );
                       },
                       reservedSize: 50,
-                      interval: 45,
+                      interval: (totalYourPrice / 4).ceilToDouble(),
                     ),
                   ),
                   topTitles: const AxisTitles(
@@ -391,7 +433,7 @@ class _DashboardPageState extends State<DashboardPage> {
                 gridData: FlGridData(
                   show: true,
                   drawVerticalLine: false,
-                  horizontalInterval: 45,
+                  horizontalInterval: (totalYourPrice / 4).ceilToDouble(),
                   getDrawingHorizontalLine: (value) {
                     return FlLine(
                       color: const Color(0xFFF3F4F6),
@@ -406,7 +448,7 @@ class _DashboardPageState extends State<DashboardPage> {
                     bottom: BorderSide(color: Colors.grey[300]!),
                   ),
                 ),
-                barGroups: items.asMap().entries.map((entry) {
+                barGroups: itemsWithTotal.asMap().entries.map((entry) {
                   final index = entry.key;
                   final item = entry.value;
                   final yourPrice = item['yourPrice'] as double;
@@ -418,7 +460,7 @@ class _DashboardPageState extends State<DashboardPage> {
                     barRods: [
                       BarChartRodData(
                         toY: yourPrice,
-                        color: const Color(0xFFFBBF24),
+                        color: const Color(0xFFE53E51),
                         width: 32,
                         borderRadius: const BorderRadius.vertical(
                           top: Radius.circular(4),
@@ -478,13 +520,38 @@ class _DashboardPageState extends State<DashboardPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Automate your savings',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
+          Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  'Automate your savings',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.white.withOpacity(0.3)),
+                ),
+                child: const Text(
+                  'Coming Soon',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 12),
           const Text(
@@ -545,7 +612,45 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  Widget _buildSupplierTrendsCard() {
+  Widget _buildItemizedSavingsTable() {
+    final savingsItems = [
+      {
+        'name': 'Chicken Breast',
+        'supplier': 'Al Rawdah',
+        'yourPrice': 24.0,
+        'benchmarkPrice': 19.0,
+        'monthlyCost': 1200.0,
+      },
+      {
+        'name': 'Italian Tomatoes (kg)',
+        'supplier': 'Fresh Fruits Co',
+        'yourPrice': 6.5,
+        'benchmarkPrice': 4.2,
+        'monthlyCost': 325.0,
+      },
+      {
+        'name': 'Olive Oil Extra Virgin (5L)',
+        'supplier': 'Global Foods',
+        'yourPrice': 180.0,
+        'benchmarkPrice': 155.0,
+        'monthlyCost': 900.0,
+      },
+      {
+        'name': 'Basmati Rice (20kg)',
+        'supplier': 'Global Foods',
+        'yourPrice': 45.0,
+        'benchmarkPrice': 38.0,
+        'monthlyCost': 675.0,
+      },
+      {
+        'name': 'Cheddar Cheese (Block)',
+        'supplier': 'Dairy Best',
+        'yourPrice': 32.0,
+        'benchmarkPrice': 28.0,
+        'monthlyCost': 480.0,
+      },
+    ];
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -554,38 +659,235 @@ class _DashboardPageState extends State<DashboardPage> {
         border: Border.all(color: const Color(0xFFE5E7EB)),
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.trending_up, size: 48, color: Color(0xFFE5E7EB)),
-          const SizedBox(height: 16),
-          const Text(
-            'Supplier Trends',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF1F2937),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Compare price history across your top 3 suppliers',
-            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF3F4F6),
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Text(
-              'Coming Soon',
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey[600],
-                fontWeight: FontWeight.w500,
+          Row(
+            children: [
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Itemized Savings Opportunities',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF1F2937),
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      'Items where you are paying significantly more than market average.',
+                      style: TextStyle(fontSize: 13, color: Color(0xFF6B7280)),
+                    ),
+                  ],
+                ),
               ),
-            ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEF4444).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: const Color(0xFFEF4444).withOpacity(0.3),
+                  ),
+                ),
+                child: const Text(
+                  'Itemized Savings Potential',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Color(0xFFEF4444),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          // Table
+          LayoutBuilder(
+            builder: (context, constraints) {
+              return SizedBox(
+                width: constraints.maxWidth,
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(minWidth: constraints.maxWidth),
+                    child: DataTable(
+                      headingRowColor: WidgetStateProperty.all(
+                        const Color(0xFFF9FAFB),
+                      ),
+                      columnSpacing: 60,
+                      horizontalMargin: 0,
+                      dataRowMinHeight: 60,
+                      dataRowMaxHeight: 80,
+                      columns: const [
+                        DataColumn(
+                          label: Expanded(
+                            child: Text(
+                              'Item Name',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF1F2937),
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+                        ),
+                        DataColumn(
+                          label: Text(
+                            'Your Price',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF1F2937),
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                        DataColumn(
+                          label: Text(
+                            'Kaso Benchmark Price',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF1F2937),
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                        DataColumn(
+                          label: Text(
+                            'Saving %',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF1F2937),
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                        DataColumn(
+                          label: Text(
+                            'Monthly Impact',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF1F2937),
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                      ],
+                      rows: savingsItems.map((item) {
+                        final yourPrice = item['yourPrice'] as double;
+                        final benchmarkPrice = item['benchmarkPrice'] as double;
+                        final monthlyCost = item['monthlyCost'] as double;
+                        final savingPercent =
+                            ((yourPrice - benchmarkPrice) / yourPrice * 100);
+                        final monthlySavings =
+                            monthlyCost * (savingPercent / 100);
+
+                        return DataRow(
+                          cells: [
+                            DataCell(
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    item['name'] as String,
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      color: Color(0xFF1F2937),
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    item['supplier'] as String,
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      color: Color(0xFF9CA3AF),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            DataCell(
+                              Text(
+                                'AED ${yourPrice.toStringAsFixed(2)}',
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  color: Color(0xFF6B7280),
+                                ),
+                              ),
+                            ),
+                            DataCell(
+                              Text(
+                                'AED ${benchmarkPrice.toStringAsFixed(2)}',
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  color: Color(0xFF6B7280),
+                                ),
+                              ),
+                            ),
+                            DataCell(
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: savingPercent > 20
+                                      ? const Color(0xFF10B981).withOpacity(0.1)
+                                      : const Color(
+                                          0xFF3B82F6,
+                                        ).withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      '${savingPercent.toStringAsFixed(0)}%',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: savingPercent > 20
+                                            ? const Color(0xFF10B981)
+                                            : const Color(0xFF3B82F6),
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Icon(
+                                      Icons.arrow_downward,
+                                      size: 14,
+                                      color: savingPercent > 20
+                                          ? const Color(0xFF10B981)
+                                          : const Color(0xFF3B82F6),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            DataCell(
+                              Text(
+                                'Provide data',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: Colors.grey[500],
+                                  fontStyle: FontStyle.italic,
+                                ),
+                              ),
+                            ),
+                          ],
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                ),
+              );
+            },
           ),
         ],
       ),
