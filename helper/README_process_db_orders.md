@@ -32,6 +32,7 @@ MAX_PARALLEL_ORDERS = 4  # Adjust based on API rate limits
 ## Prerequisites
 
 1. **Database credentials** in `.env`:
+
 ```env
 LOCAL_DB_HOST=your-host
 LOCAL_DB_PORT=5432
@@ -41,11 +42,13 @@ LOCAL_DB_PASSWORD=your-password
 ```
 
 2. **OpenAI API Key** in `.env`:
+
 ```env
 OPENAI_API_KEY=sk-...
 ```
 
 3. **Install dependencies**:
+
 ```bash
 pip install -r requirements.txt
 ```
@@ -69,15 +72,16 @@ python helper/process_db_orders.py
 ## How It Works
 
 ### 1. Query Orders
+
 ```sql
-SELECT id as "order_id", invoice_image, created_at 
+SELECT id as "order_id", invoice_image, created_at
 FROM orders
-WHERE 
-    restaurant_id = 8178 
+WHERE
+    restaurant_id = 8178
     AND created_at >= '2025-10-01 00:00:00'
     AND invoice_image IS NOT NULL
     AND NOT EXISTS (
-        SELECT 1 FROM benchmarking.invoice_items 
+        SELECT 1 FROM benchmarking.invoice_items
         WHERE order_id = orders.id
     )
 ORDER BY created_at DESC
@@ -85,6 +89,7 @@ LIMIT 100
 ```
 
 ### 2. For Each Order
+
 1. Download all invoice images from S3
 2. Process each image with GPT-4 Vision
 3. Extract items (description, quantity, unit, price, total)
@@ -92,11 +97,12 @@ LIMIT 100
 5. If any invoice fails: Skip entire order
 
 ### 3. Database Insert
+
 ```sql
-INSERT INTO benchmarking.invoice_items 
+INSERT INTO benchmarking.invoice_items
     (order_id, item_name, qty, uom, unit_price, net_price, llm, created_at, updated_at)
 VALUES ...
-ON CONFLICT (order_id, item_name, qty, uom, unit_price, net_price) 
+ON CONFLICT (order_id, item_name, qty, uom, unit_price, net_price)
 DO NOTHING
 ```
 
@@ -170,6 +176,7 @@ DO NOTHING
 ## Error Handling
 
 The script handles:
+
 - ✅ S3 download failures
 - ✅ Image size limits (20MB max)
 - ✅ LLM processing errors
@@ -178,6 +185,7 @@ The script handles:
 - ✅ Transaction rollback on partial failures
 
 Failed orders are:
+
 - Logged with error details
 - Skipped (not marked as processed)
 - Will be retried on next run
@@ -188,14 +196,14 @@ Failed orders are:
 
 ```sql
 -- Count processed orders
-SELECT COUNT(*) 
-FROM benchmarking.invoice_items 
+SELECT COUNT(*)
+FROM benchmarking.invoice_items
 WHERE llm = 'gpt-4o-2024-11-20';
 
 -- Recent processed orders
-SELECT DISTINCT order_id, created_at 
-FROM benchmarking.invoice_items 
-ORDER BY created_at DESC 
+SELECT DISTINCT order_id, created_at
+FROM benchmarking.invoice_items
+ORDER BY created_at DESC
 LIMIT 10;
 
 -- Items per order
@@ -210,12 +218,12 @@ ORDER BY items_count DESC;
 ```sql
 SELECT COUNT(*)
 FROM orders o
-WHERE 
+WHERE
     o.restaurant_id = 8178
     AND o.created_at >= '2025-10-01 00:00:00'
     AND o.invoice_image IS NOT NULL
     AND NOT EXISTS (
-        SELECT 1 FROM benchmarking.invoice_items ii 
+        SELECT 1 FROM benchmarking.invoice_items ii
         WHERE ii.order_id = o.id
     );
 ```
@@ -223,15 +231,19 @@ WHERE
 ## Troubleshooting
 
 ### Issue: Database connection failed
+
 **Solution**: Check `.env` credentials and database accessibility
 
 ### Issue: S3 download failed
+
 **Solution**: Check S3 URLs and network connectivity
 
 ### Issue: LLM timeout
+
 **Solution**: Reduce `MAX_PARALLEL_ORDERS` to avoid rate limits
 
 ### Issue: Too slow
+
 **Solution**: Increase `MAX_PARALLEL_ORDERS` (watch OpenAI rate limits)
 
 ## Safety Features
@@ -253,6 +265,7 @@ WHERE
 ## Support
 
 For issues or questions, check:
+
 - Database schema in `helper/tasks.md`
 - Invoice processor: `invoice_processor.py`
 - Models: `models.py`

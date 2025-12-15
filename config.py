@@ -27,6 +27,13 @@ class Settings(BaseSettings):
     # Demo Mode - multiplies occurrences by random 13-23 for demo purposes
     demo: bool = False
     
+    # Database Settings (optional, for helper scripts)
+    local_db_host: str = ""
+    local_db_port: int = 5432
+    local_db_name: str = ""
+    local_db_user: str = ""
+    local_db_password: str = ""
+    
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"

@@ -84,10 +84,12 @@ benchmarking.invoice_items (
 ## 🔧 Requirements
 
 **Already installed**:
+
 - ✅ psycopg2-binary (PostgreSQL adapter)
 - ✅ All other dependencies from requirements.txt
 
 **Need in .env**:
+
 ```env
 LOCAL_DB_HOST=...
 LOCAL_DB_PORT=5432
@@ -108,6 +110,7 @@ OPENAI_API_KEY=sk-...
 ## 📖 Full Documentation
 
 See `helper/README_process_db_orders.md` for:
+
 - Detailed features
 - SQL queries used
 - Error handling
