@@ -78,7 +78,8 @@ def fetch_unprocessed_orders(conn) -> List[Dict]:
         o.created_at
     FROM benchmarking.orders o
     WHERE 
-        o.created_at >= %s
+        o.restaurant_id = %s
+        AND o.created_at >= %s
         AND o.invoice_image IS NOT NULL
         AND NOT EXISTS (
             SELECT 1 
@@ -90,7 +91,7 @@ def fetch_unprocessed_orders(conn) -> List[Dict]:
     """
     
     with conn.cursor() as cur:
-        cur.execute(query, (START_DATE, MAX_ORDERS_PER_RUN))
+        cur.execute(query, (RESTAURANT_ID, START_DATE, MAX_ORDERS_PER_RUN))
         columns = [desc[0] for desc in cur.description]
         results = [dict(zip(columns, row)) for row in cur.fetchall()]
     
