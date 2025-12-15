@@ -5,6 +5,7 @@ import '../services/api_service.dart';
 import 'upload_page.dart';
 import 'dashboard_page.dart';
 import 'reports_page.dart';
+import 'analytics_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -53,6 +54,8 @@ class _HomePageState extends State<HomePage>
       case 1:
         return const UploadPage();
       case 2:
+        return const AnalyticsPage();
+      case 3:
         return const ReportsPage();
       default:
         return DashboardPage(
@@ -130,9 +133,15 @@ class _HomePageState extends State<HomePage>
                 ),
                 const SizedBox(width: 8),
                 _buildTopNavItem(
-                  icon: Icons.assessment_rounded,
-                  label: 'Reports',
+                  icon: Icons.analytics_rounded,
+                  label: 'Analytics',
                   index: 2,
+                ),
+                const SizedBox(width: 8),
+                _buildTopNavItem(
+                  icon: Icons.lightbulb_outline_rounded,
+                  label: 'Ideas',
+                  index: 3,
                 ),
                 const Spacer(),
                 // Backend status indicator

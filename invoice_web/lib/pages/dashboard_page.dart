@@ -145,7 +145,7 @@ class _DashboardPageState extends State<DashboardPage> {
               child: _buildStatCard(
                 title: 'Total Monthly Savings Potential',
                 value: 'AED 3,420',
-                subtitle: '+18% from last month based on volume',
+                subtitle: '',
                 icon: Icons.trending_up,
                 iconColor: const Color(0xFF10B981),
                 hasProgressBar: false,
@@ -155,7 +155,7 @@ class _DashboardPageState extends State<DashboardPage> {
             Flexible(
               flex: 1,
               child: _buildStatCard(
-                title: 'Average Saving per Item',
+                title: 'Average Cost Reduction per Item',
                 value: '12%',
                 subtitle: 'Across 25 benchmarked items',
                 icon: Icons.help_outline,
@@ -575,7 +575,7 @@ class _DashboardPageState extends State<DashboardPage> {
                 padding: const EdgeInsets.symmetric(vertical: 16),
               ),
               child: const Text(
-                'Activate Auto-RFQ',
+                'Find Better Prices',
                 style: TextStyle(fontWeight: FontWeight.w600),
               ),
             ),
@@ -668,7 +668,7 @@ class _DashboardPageState extends State<DashboardPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Itemized Savings Opportunities',
+                      'Itemized Savings Potential',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -681,27 +681,6 @@ class _DashboardPageState extends State<DashboardPage> {
                       style: TextStyle(fontSize: 13, color: Color(0xFF6B7280)),
                     ),
                   ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEF4444).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: const Color(0xFFEF4444).withOpacity(0.3),
-                  ),
-                ),
-                child: const Text(
-                  'Itemized Savings Potential',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: Color(0xFFEF4444),
-                    fontWeight: FontWeight.w600,
-                  ),
                 ),
               ),
             ],
@@ -739,6 +718,16 @@ class _DashboardPageState extends State<DashboardPage> {
                         ),
                         DataColumn(
                           label: Text(
+                            'Supplier',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF1F2937),
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                        DataColumn(
+                          label: Text(
                             'Your Price',
                             style: TextStyle(
                               fontWeight: FontWeight.w600,
@@ -769,7 +758,7 @@ class _DashboardPageState extends State<DashboardPage> {
                         ),
                         DataColumn(
                           label: Text(
-                            'Monthly Impact',
+                            'Monthly Savings',
                             style: TextStyle(
                               fontWeight: FontWeight.w600,
                               color: Color(0xFF1F2937),
@@ -790,27 +779,22 @@ class _DashboardPageState extends State<DashboardPage> {
                         return DataRow(
                           cells: [
                             DataCell(
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    item['name'] as String,
-                                    style: const TextStyle(
-                                      fontSize: 13,
-                                      color: Color(0xFF1F2937),
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    item['supplier'] as String,
-                                    style: const TextStyle(
-                                      fontSize: 11,
-                                      color: Color(0xFF9CA3AF),
-                                    ),
-                                  ),
-                                ],
+                              Text(
+                                item['name'] as String,
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  color: Color(0xFF1F2937),
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                            DataCell(
+                              Text(
+                                item['supplier'] as String,
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  color: Color(0xFF6B7280),
+                                ),
                               ),
                             ),
                             DataCell(
