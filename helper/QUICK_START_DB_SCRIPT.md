@@ -22,7 +22,7 @@ MAX_PARALLEL_ORDERS = 4             # Concurrent processing (adjust for speed vs
 ## 📋 What It Does
 
 1. ✅ Connects to PostgreSQL database
-2. ✅ Queries unprocessed orders for restaurant #8178 (since Oct 1, 2025)
+2. ✅ Queries unprocessed orders for restaurants [7503, 8178] (since Oct 1, 2025)
 3. ✅ Downloads invoice images from S3
 4. ✅ Processes with GPT-4o-2024-11-20
 5. ✅ Extracts items (name, qty, unit, price, total)
@@ -34,7 +34,7 @@ MAX_PARALLEL_ORDERS = 4             # Concurrent processing (adjust for speed vs
 
 ```
 🚀 Invoice Items Extraction from Database
-📊 Configuration: Restaurant 8178, 100 orders max
+📊 Configuration: Restaurants [7503, 8178], 100 orders max
 🤖 Model: gpt-4o-2024-11-20
 🔍 Found 45 orders to process
 
@@ -104,7 +104,8 @@ OPENAI_API_KEY=sk-...
 **Faster Processing**: Increase `MAX_PARALLEL_ORDERS` to 8 or 10  
 **Rate Limit Issues**: Decrease to 2 or 1  
 **Process All**: Set `MAX_ORDERS_PER_RUN = 1000` or higher  
-**Different Restaurant**: Change `RESTAURANT_ID`  
+**Different Restaurants**: Change `RESTAURANT_IDS = [7503, 8178, ...]`  
+**Single Restaurant**: Use `RESTAURANT_IDS = [8178]`  
 **Different Date**: Change `START_DATE`
 
 ## 📖 Full Documentation

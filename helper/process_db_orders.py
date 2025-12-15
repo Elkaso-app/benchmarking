@@ -37,12 +37,12 @@ load_dotenv()
 # ==================== CONFIGURATION ====================
 
 # Restaurant and date filter
-RESTAURANT_ID = 7503
+RESTAURANT_IDS = [8296, 8446,7372,8290,8136,8355,6150,8576,8193,8178,6975,5750,8828,7503]  # List of restaurant IDs to process
 START_DATE = '2025-10-01 00:00:00'
 
 # Processing limits
-MAX_ORDERS_PER_RUN = 100
-MAX_PARALLEL_ORDERS = 4  # Process up to 4 orders concurrently
+MAX_ORDERS_PER_RUN = 1000
+MAX_PARALLEL_ORDERS = 25  # Process up to 4 orders concurrently
 
 # Database connection
 DB_CONFIG = {
@@ -78,7 +78,7 @@ def fetch_unprocessed_orders(conn) -> List[Dict]:
         o.created_at
     FROM benchmarking.orders o
     WHERE 
-        o.restaurant_id = %s
+        o.restaurant_id = ANY(%s)
         AND o.created_at >= %s
         AND o.invoice_image IS NOT NULL
         AND array_length(o.invoice_image, 1) > 0
@@ -92,7 +92,7 @@ def fetch_unprocessed_orders(conn) -> List[Dict]:
     """
     
     with conn.cursor() as cur:
-        cur.execute(query, (RESTAURANT_ID, START_DATE, MAX_ORDERS_PER_RUN))
+        cur.execute(query, (RESTAURANT_IDS, START_DATE, MAX_ORDERS_PER_RUN))
         columns = [desc[0] for desc in cur.description]
         results = [dict(zip(columns, row)) for row in cur.fetchall()]
     
@@ -323,7 +323,7 @@ def main():
     print("🚀 Invoice Items Extraction from Database")
     print("=" * 80)
     print(f"\n📊 Configuration:")
-    print(f"   Restaurant ID: {RESTAURANT_ID}")
+    print(f"   Restaurant IDs: {RESTAURANT_IDS}")
     print(f"   Start Date: {START_DATE}")
     print(f"   Max Orders: {MAX_ORDERS_PER_RUN}")
     print(f"   Parallel Workers: {MAX_PARALLEL_ORDERS}")
