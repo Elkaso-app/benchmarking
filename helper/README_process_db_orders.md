@@ -114,7 +114,7 @@ DO NOTHING
 ================================================================================
 
 📊 Configuration:
-   Restaurant ID: 8178
+   Restaurant IDs: [7503, 8178]
    Start Date: 2025-10-01 00:00:00
    Max Orders: 100
    Parallel Workers: 4
@@ -269,4 +269,3 @@ For issues or questions, check:
 - Database schema in `helper/tasks.md`
 - Invoice processor: `invoice_processor.py`
 - Models: `models.py`
-

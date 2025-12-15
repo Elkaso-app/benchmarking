@@ -41,8 +41,8 @@ RESTAURANT_IDS = [8296, 8446,7372,8290,8136,8355,6150,8576,8193,8178,6975,5750,8
 START_DATE = '2025-10-01 00:00:00'
 
 # Processing limits
-MAX_ORDERS_PER_RUN = 1000
-MAX_PARALLEL_ORDERS = 25  # Process up to 4 orders concurrently
+MAX_ORDERS_PER_RUN = 10000
+MAX_PARALLEL_ORDERS = 50  # Process up to 4 orders concurrently
 
 # Database connection
 DB_CONFIG = {
@@ -147,15 +147,18 @@ def insert_invoice_items(conn, order_id: int, items: List[InvoiceItem], llm_mode
 
 def download_image_from_s3(url: str) -> Optional[bytes]:
     """
-    Download image from S3 URL.
+    Download image from S3 URL and convert to supported format.
     
     Args:
         url: S3 URL
         
     Returns:
-        Image bytes or None if failed
+        Image bytes in JPEG format or None if failed
     """
     try:
+        from PIL import Image
+        from io import BytesIO
+        
         response = requests.get(url, timeout=REQUEST_TIMEOUT)
         response.raise_for_status()
         
@@ -165,7 +168,30 @@ def download_image_from_s3(url: str) -> Optional[bytes]:
             print(f"  ⚠️  Image too large: {content_length / 1024 / 1024:.1f}MB")
             return None
         
-        return response.content
+        # Convert image to JPEG format (supported by OpenAI)
+        try:
+            img = Image.open(BytesIO(response.content))
+            
+            # Convert RGBA to RGB if needed
+            if img.mode in ('RGBA', 'LA', 'P'):
+                background = Image.new('RGB', img.size, (255, 255, 255))
+                if img.mode == 'P':
+                    img = img.convert('RGBA')
+                background.paste(img, mask=img.split()[-1] if img.mode in ('RGBA', 'LA') else None)
+                img = background
+            elif img.mode != 'RGB':
+                img = img.convert('RGB')
+            
+            # Save as JPEG
+            output = BytesIO()
+            img.save(output, format='JPEG', quality=95)
+            return output.getvalue()
+            
+        except Exception as convert_error:
+            print(f"  ⚠️  Image conversion failed: {convert_error}")
+            # If conversion fails, return original bytes
+            return response.content
+            
     except Exception as e:
         print(f"  ❌ Download failed: {e}")
         return None
@@ -251,15 +277,8 @@ def process_single_order(
             if not image_bytes:
                 return (order_id, 0, f"Failed to download invoice {idx}")
             
-            # Determine extension from URL
-            extension = 'jpg'
-            if '.png' in url.lower():
-                extension = 'png'
-            elif '.jpeg' in url.lower():
-                extension = 'jpeg'
-            
-            # Save to temp file
-            temp_path = save_temp_image(image_bytes, extension)
+            # Save as JPEG (we already converted it)
+            temp_path = save_temp_image(image_bytes, 'jpg')
             if not temp_path:
                 return (order_id, 0, f"Failed to save invoice {idx} to temp file")
             
