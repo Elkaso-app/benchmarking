@@ -61,72 +61,97 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Widget _buildHeader() {
-    return Column(
+    return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          crossAxisAlignment: WrapCrossAlignment.center,
+        // Title and subtitle
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Wrap(
+                spacing: 12,
+                runSpacing: 8,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  const Text(
+                    'Marketprice Radar',
+                    style: TextStyle(
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF08012D),
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE3F2FD),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: const Color(0xFF08012D)),
+                    ),
+                    child: const Text(
+                      'Beta',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF08012D),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Based on your latest supplier invoices  •  Generated on Dec 9, 2024',
+                style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 2,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 24),
+        // Buttons aligned to the right
+        Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
-              'Price Benchmark Report',
-              style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF1F2937),
+            ElevatedButton.icon(
+              onPressed: widget.onNavigateToUpload,
+              icon: const Icon(Icons.upload_file, size: 22),
+              label: const Text(
+                'Upload Invoices',
+                style: TextStyle(fontSize: 16),
               ),
-            ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: const Color(0xFFEBF5FF),
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: const Color(0xFF3B82F6)),
-              ),
-              child: const Text(
-                'Beta',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF3B82F6),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: const Color(0xFF08012D),
+                side: const BorderSide(color: Color(0xFF08012D)),
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 16,
                 ),
               ),
             ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'Based on your latest supplier invoices  •  Generated on Dec 9, 2024',
-          style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-          overflow: TextOverflow.ellipsis,
-          maxLines: 2,
-        ),
-        const SizedBox(height: 16),
-        Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          alignment: WrapAlignment.end,
-          children: [
+            const SizedBox(width: 12),
             ElevatedButton.icon(
               onPressed: () {},
-              icon: const Icon(Icons.picture_as_pdf_outlined, size: 18),
-              label: const Text('Export PDF'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: const Color(0xFF1F2937),
-                side: BorderSide(color: Colors.grey[300]!),
-                elevation: 0,
+              icon: const Icon(Icons.search, size: 22),
+              label: const Text(
+                'Find better prices',
+                style: TextStyle(fontSize: 16),
               ),
-            ),
-            ElevatedButton.icon(
-              onPressed: () {},
-              icon: const Icon(Icons.auto_awesome, size: 18),
-              label: const Text('Auto-Negotiate'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF10B981),
+                backgroundColor: const Color(0xFF08012D),
                 foregroundColor: Colors.white,
                 elevation: 0,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 16,
+                ),
               ),
             ),
           ],
@@ -138,48 +163,51 @@ class _DashboardPageState extends State<DashboardPage> {
   Widget _buildTopStatsCards() {
     return LayoutBuilder(
       builder: (context, constraints) {
-        return Row(
-          children: [
-            Flexible(
-              flex: 1,
-              child: _buildStatCard(
-                title: 'Total Monthly Savings Potential',
-                value: 'AED 3,420',
-                subtitle: '',
-                icon: Icons.trending_up,
-                iconColor: const Color(0xFF10B981),
-                hasProgressBar: false,
+        return IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Flexible(
+                flex: 1,
+                child: _buildStatCard(
+                  title: 'Total Monthly Savings Potential',
+                  value: 'AED 3,420',
+                  subtitle: '',
+                  icon: Icons.trending_up,
+                  iconColor: const Color(0xFF10B981),
+                  hasProgressBar: false,
+                ),
               ),
-            ),
-            const SizedBox(width: 24),
-            Flexible(
-              flex: 1,
-              child: _buildStatCard(
-                title: 'Average Cost Reduction per Item',
-                value: '12%',
-                subtitle: 'Across 25 benchmarked items',
-                icon: Icons.help_outline,
-                iconColor: Colors.grey[400]!,
-                hasProgressBar: true,
-                progressValue: 0.12,
+              const SizedBox(width: 24),
+              Flexible(
+                flex: 1,
+                child: _buildStatCard(
+                  title: 'Average Cost Reduction per Item',
+                  value: '12%',
+                  subtitle: 'Across 25 benchmarked items',
+                  icon: Icons.help_outline,
+                  iconColor: Colors.grey[400]!,
+                  hasProgressBar: true,
+                  progressValue: 0.12,
+                ),
               ),
-            ),
-            const SizedBox(width: 24),
-            Flexible(
-              flex: 1,
-              child: _buildStatCard(
-                title: 'Items Overpriced',
-                value: '8 /25',
-                subtitle: 'paying >10% above market average',
-                icon: Icons.error_outline,
-                iconColor: const Color(0xFFEF4444),
-                hasProgressBar: false,
-                showDots: true,
-                totalDots: 25,
-                filledDots: 8,
+              const SizedBox(width: 24),
+              Flexible(
+                flex: 1,
+                child: _buildStatCard(
+                  title: 'Items Overpriced',
+                  value: '8 /25',
+                  subtitle: 'paying >10% above market average',
+                  icon: Icons.error_outline,
+                  iconColor: const Color(0xFFEF4444),
+                  hasProgressBar: false,
+                  showDots: true,
+                  totalDots: 25,
+                  filledDots: 8,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         );
       },
     );
@@ -198,7 +226,7 @@ class _DashboardPageState extends State<DashboardPage> {
     int filledDots = 0,
   }) {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
@@ -206,15 +234,15 @@ class _DashboardPageState extends State<DashboardPage> {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
         children: [
+          // Top section: Title with icon
           Row(
             children: [
               Flexible(
                 child: Text(
                   title,
                   style: TextStyle(
-                    fontSize: 13,
+                    fontSize: 15,
                     color: Colors.grey[600],
                     fontWeight: FontWeight.w500,
                   ),
@@ -223,49 +251,52 @@ class _DashboardPageState extends State<DashboardPage> {
                 ),
               ),
               const SizedBox(width: 8),
-              Icon(icon, size: 18, color: iconColor),
+              Icon(icon, size: 20, color: iconColor),
             ],
           ),
           const SizedBox(height: 12),
+          // Middle section: Value
           FittedBox(
             fit: BoxFit.scaleDown,
             alignment: Alignment.centerLeft,
             child: Text(
               value,
               style: const TextStyle(
-                fontSize: 32,
+                fontSize: 38,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF1F2937),
+                color: Color(0xFF08012D),
               ),
             ),
           ),
-          const SizedBox(height: 8),
-          Text(
-            subtitle,
-            style: TextStyle(fontSize: 12, color: Colors.grey[500]),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
+          // Spacer to push bottom content down
+          const Spacer(),
+          // Bottom section: Subtitle, progress bar, or dots
+          if (subtitle.isNotEmpty)
+            Text(
+              subtitle,
+              style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
           if (hasProgressBar) ...[
-            const SizedBox(height: 12),
+            if (subtitle.isNotEmpty) const SizedBox(height: 8),
             LinearProgressIndicator(
               value: progressValue,
               backgroundColor: const Color(0xFFE5E7EB),
-              valueColor: const AlwaysStoppedAnimation(Color(0xFF10B981)),
-              minHeight: 6,
-              borderRadius: BorderRadius.circular(3),
+              valueColor: const AlwaysStoppedAnimation(Color(0xFF08012D)),
+              minHeight: 8,
+              borderRadius: BorderRadius.circular(4),
             ),
           ],
-          if (showDots) ...[
-            const SizedBox(height: 12),
+          if (showDots)
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
                 children: List.generate(totalDots, (index) {
                   return Container(
-                    width: 8,
-                    height: 8,
-                    margin: const EdgeInsets.only(right: 4),
+                    width: 10,
+                    height: 10,
+                    margin: const EdgeInsets.only(right: 5),
                     decoration: BoxDecoration(
                       color: index < filledDots
                           ? const Color(0xFFEF4444)
@@ -276,7 +307,6 @@ class _DashboardPageState extends State<DashboardPage> {
                 }),
               ),
             ),
-          ],
         ],
       ),
     );
@@ -325,15 +355,15 @@ class _DashboardPageState extends State<DashboardPage> {
           const Text(
             'Price Comparison',
             style: TextStyle(
-              fontSize: 18,
+              fontSize: 22,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF1F2937),
+              color: Color(0xFF08012D),
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 6),
           Text(
             'Your current unit prices vs. Kaso market benchmark',
-            style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+            style: TextStyle(fontSize: 15, color: Colors.grey[600]),
           ),
           const SizedBox(height: 24),
           Row(
@@ -341,7 +371,7 @@ class _DashboardPageState extends State<DashboardPage> {
             children: [
               _buildLegendItem('Your Price', const Color(0xFFE53E51)),
               const SizedBox(width: 24),
-              _buildLegendItem('Kaso Benchmark Price', const Color(0xFF1E3A8A)),
+              _buildLegendItem('Kaso Benchmark Price', const Color(0xFF08012D)),
             ],
           ),
           const SizedBox(height: 24),
@@ -354,28 +384,110 @@ class _DashboardPageState extends State<DashboardPage> {
                 barTouchData: BarTouchData(
                   enabled: true,
                   touchTooltipData: BarTouchTooltipData(
-                    getTooltipColor: (group) => const Color(0xFF1F2937),
-                    tooltipPadding: const EdgeInsets.all(8),
-                    tooltipMargin: 8,
+                    getTooltipColor: (group) => Colors.white,
+                    tooltipPadding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 14,
+                    ),
+                    tooltipMargin: 16,
+                    tooltipRoundedRadius: 12,
+                    maxContentWidth: 280,
+                    fitInsideHorizontally: true,
+                    fitInsideVertically: true,
+                    tooltipBorder: BorderSide(
+                      color: Colors.grey.shade300,
+                      width: 1,
+                    ),
                     getTooltipItem: (group, groupIndex, rod, rodIndex) {
                       final item = itemsWithTotal[group.x.toInt()];
                       final yourPrice = item['yourPrice'] as double;
                       final benchmark = item['benchmark'] as double;
-                      final percentDiff =
-                          ((yourPrice - benchmark) / benchmark * 100);
-                      final isYourPrice = rodIndex == 0;
-                      final value = isYourPrice ? yourPrice : benchmark;
-                      final label = isYourPrice
-                          ? 'Your Price'
-                          : 'Kaso Benchmark';
+                      final potentialSaving =
+                          ((yourPrice - benchmark) / yourPrice * 100);
+                      final itemName = item['name'] as String;
+
+                      // Only show tooltip on first rod (yourPrice) to avoid duplicates
+                      if (rodIndex != 0) return null;
 
                       return BarTooltipItem(
-                        '$label\nAED ${value.toStringAsFixed(1)}\n${percentDiff >= 0 ? '+' : ''}${percentDiff.toStringAsFixed(1)}%',
+                        '$itemName\n\n',
                         const TextStyle(
-                          color: Colors.white,
+                          color: Color(0xFF1F2937),
                           fontWeight: FontWeight.bold,
-                          fontSize: 12,
+                          fontSize: 17,
                         ),
+                        textAlign: TextAlign.left,
+                        children: [
+                          // Red dot for Your Price (matches bar color)
+                          const TextSpan(
+                            text: '● ',
+                            style: TextStyle(
+                              color: Color(0xFFE53E51),
+                              fontSize: 14,
+                            ),
+                          ),
+                          TextSpan(
+                            text: 'Your Price:  ',
+                            style: TextStyle(
+                              color: Colors.grey[600],
+                              fontWeight: FontWeight.normal,
+                              fontSize: 14,
+                            ),
+                          ),
+                          TextSpan(
+                            text: 'AED ${yourPrice.toStringAsFixed(0)}\n',
+                            style: const TextStyle(
+                              color: Color(0xFF1F2937),
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                            ),
+                          ),
+                          // Dark blue dot for Market Benchmark (matches bar color)
+                          const TextSpan(
+                            text: '● ',
+                            style: TextStyle(
+                              color: Color(0xFF08012D),
+                              fontSize: 14,
+                            ),
+                          ),
+                          TextSpan(
+                            text: 'Market Benchmark:  ',
+                            style: TextStyle(
+                              color: Colors.grey[600],
+                              fontWeight: FontWeight.normal,
+                              fontSize: 14,
+                            ),
+                          ),
+                          TextSpan(
+                            text: 'AED ${benchmark.toStringAsFixed(0)}\n\n',
+                            style: const TextStyle(
+                              color: Color(0xFF1F2937),
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                            ),
+                          ),
+                          // Divider line using dashes
+                          TextSpan(
+                            text: '───────────────\n',
+                            style: TextStyle(
+                              color: Colors.grey[300],
+                              fontSize: 10,
+                              letterSpacing: -2,
+                            ),
+                          ),
+                          // Potential Saving in green
+                          TextSpan(
+                            text:
+                                'Potential Saving: ${potentialSaving > 0 ? potentialSaving.toStringAsFixed(0) : 0}%',
+                            style: TextStyle(
+                              color: potentialSaving > 0
+                                  ? const Color(0xFF10B981)
+                                  : Colors.grey[500],
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ],
                       );
                     },
                   ),
@@ -385,6 +497,7 @@ class _DashboardPageState extends State<DashboardPage> {
                   bottomTitles: AxisTitles(
                     sideTitles: SideTitles(
                       showTitles: true,
+                      reservedSize: 40,
                       getTitlesWidget: (value, meta) {
                         if (value.toInt() >= 0 &&
                             value.toInt() < itemsWithTotal.length) {
@@ -393,7 +506,7 @@ class _DashboardPageState extends State<DashboardPage> {
                             child: Text(
                               itemsWithTotal[value.toInt()]['name'] as String,
                               style: TextStyle(
-                                fontSize: 11,
+                                fontSize: 12,
                                 color: Colors.grey[600],
                                 fontWeight: value.toInt() == 0
                                     ? FontWeight.bold
@@ -414,12 +527,12 @@ class _DashboardPageState extends State<DashboardPage> {
                         return Text(
                           'AED ${value.toInt()}',
                           style: TextStyle(
-                            fontSize: 11,
+                            fontSize: 13,
                             color: Colors.grey[600],
                           ),
                         );
                       },
-                      reservedSize: 50,
+                      reservedSize: 55,
                       interval: (totalYourPrice / 4).ceilToDouble(),
                     ),
                   ),
@@ -468,7 +581,7 @@ class _DashboardPageState extends State<DashboardPage> {
                       ),
                       BarChartRodData(
                         toY: benchmark,
-                        color: const Color(0xFF1E3A8A),
+                        color: const Color(0xFF08012D),
                         width: 32,
                         borderRadius: const BorderRadius.vertical(
                           top: Radius.circular(4),
@@ -489,15 +602,15 @@ class _DashboardPageState extends State<DashboardPage> {
     return Row(
       children: [
         Container(
-          width: 12,
-          height: 12,
+          width: 14,
+          height: 14,
           decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: 10),
         Text(
           label,
           style: TextStyle(
-            fontSize: 13,
+            fontSize: 15,
             color: Colors.grey[700],
             fontWeight: FontWeight.w500,
           ),
@@ -508,12 +621,12 @@ class _DashboardPageState extends State<DashboardPage> {
 
   Widget _buildAutoNegotiateCard() {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(28),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF1E3A8A), Color(0xFF1E40AF)],
+          colors: [Color(0xFF08012D), Color(0xFF08012D)],
         ),
         borderRadius: BorderRadius.circular(12),
       ),
@@ -526,7 +639,7 @@ class _DashboardPageState extends State<DashboardPage> {
                 child: Text(
                   'Automate your savings',
                   style: TextStyle(
-                    fontSize: 20,
+                    fontSize: 24,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
                   ),
@@ -534,8 +647,8 @@ class _DashboardPageState extends State<DashboardPage> {
               ),
               Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
+                  horizontal: 14,
+                  vertical: 7,
                 ),
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.2),
@@ -545,7 +658,7 @@ class _DashboardPageState extends State<DashboardPage> {
                 child: const Text(
                   'Coming Soon',
                   style: TextStyle(
-                    fontSize: 11,
+                    fontSize: 13,
                     color: Colors.white,
                     fontWeight: FontWeight.w600,
                   ),
@@ -553,30 +666,30 @@ class _DashboardPageState extends State<DashboardPage> {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           const Text(
             'We can negotiate better prices with your suppliers automatically using our AI-driven RFQ engine.',
-            style: TextStyle(fontSize: 13, color: Colors.white70, height: 1.5),
+            style: TextStyle(fontSize: 15, color: Colors.white70, height: 1.5),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 28),
           _buildStep('1', 'Select items to renegotiate'),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
           _buildStep('2', 'AI contacts suppliers'),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
           _buildStep('3', 'You approve the best offer'),
-          const SizedBox(height: 24),
+          const SizedBox(height: 28),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
               onPressed: () {},
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.white,
-                foregroundColor: const Color(0xFF1E3A8A),
-                padding: const EdgeInsets.symmetric(vertical: 16),
+                foregroundColor: const Color(0xFF08012D),
+                padding: const EdgeInsets.symmetric(vertical: 18),
               ),
               child: const Text(
                 'Find Better Prices',
-                style: TextStyle(fontWeight: FontWeight.w600),
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
               ),
             ),
           ),
@@ -589,8 +702,8 @@ class _DashboardPageState extends State<DashboardPage> {
     return Row(
       children: [
         Container(
-          width: 24,
-          height: 24,
+          width: 28,
+          height: 28,
           decoration: BoxDecoration(
             color: Colors.white.withOpacity(0.2),
             shape: BoxShape.circle,
@@ -599,55 +712,58 @@ class _DashboardPageState extends State<DashboardPage> {
             child: Text(
               number,
               style: const TextStyle(
-                fontSize: 12,
+                fontSize: 14,
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
               ),
             ),
           ),
         ),
-        const SizedBox(width: 12),
-        Text(text, style: const TextStyle(fontSize: 14, color: Colors.white)),
+        const SizedBox(width: 14),
+        Text(text, style: const TextStyle(fontSize: 16, color: Colors.white)),
       ],
     );
   }
 
   Widget _buildItemizedSavingsTable() {
+    // Demo data - In production, this would come from backend API
+    // API endpoint: GET /api/savings/itemized
+    // Response structure: { items: [...], totalMonthlySavings: number }
     final savingsItems = [
       {
-        'name': 'Chicken Breast',
-        'supplier': 'Al Rawdah',
+        'name': 'Chicken Breast (kg)',
+        'supplier': 'Al Rawdah Foods',
         'yourPrice': 24.0,
         'benchmarkPrice': 19.0,
-        'monthlyCost': 1200.0,
+        'monthlyQuantity': 150, // kg per month
       },
       {
         'name': 'Italian Tomatoes (kg)',
         'supplier': 'Fresh Fruits Co',
         'yourPrice': 6.5,
         'benchmarkPrice': 4.2,
-        'monthlyCost': 325.0,
+        'monthlyQuantity': 200, // kg per month
       },
       {
         'name': 'Olive Oil Extra Virgin (5L)',
-        'supplier': 'Global Foods',
+        'supplier': 'Global Foods LLC',
         'yourPrice': 180.0,
         'benchmarkPrice': 155.0,
-        'monthlyCost': 900.0,
+        'monthlyQuantity': 12, // bottles per month
       },
       {
         'name': 'Basmati Rice (20kg)',
-        'supplier': 'Global Foods',
+        'supplier': 'Global Foods LLC',
         'yourPrice': 45.0,
         'benchmarkPrice': 38.0,
-        'monthlyCost': 675.0,
+        'monthlyQuantity': 25, // bags per month
       },
       {
-        'name': 'Cheddar Cheese (Block)',
-        'supplier': 'Dairy Best',
+        'name': 'Cheddar Cheese Block (kg)',
+        'supplier': 'Dairy Best Trading',
         'yourPrice': 32.0,
         'benchmarkPrice': 28.0,
-        'monthlyCost': 480.0,
+        'monthlyQuantity': 80, // kg per month
       },
     ];
 
@@ -670,15 +786,15 @@ class _DashboardPageState extends State<DashboardPage> {
                     Text(
                       'Itemized Savings Potential',
                       style: TextStyle(
-                        fontSize: 18,
+                        fontSize: 22,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF1F2937),
+                        color: Color(0xFF08012D),
                       ),
                     ),
-                    SizedBox(height: 4),
+                    SizedBox(height: 6),
                     Text(
                       'Items where you are paying significantly more than market average.',
-                      style: TextStyle(fontSize: 13, color: Color(0xFF6B7280)),
+                      style: TextStyle(fontSize: 15, color: Color(0xFF6B7280)),
                     ),
                   ],
                 ),
@@ -710,8 +826,8 @@ class _DashboardPageState extends State<DashboardPage> {
                               'Item Name',
                               style: TextStyle(
                                 fontWeight: FontWeight.w600,
-                                color: Color(0xFF1F2937),
-                                fontSize: 13,
+                                color: Color(0xFF08012D),
+                                fontSize: 15,
                               ),
                             ),
                           ),
@@ -721,8 +837,8 @@ class _DashboardPageState extends State<DashboardPage> {
                             'Supplier',
                             style: TextStyle(
                               fontWeight: FontWeight.w600,
-                              color: Color(0xFF1F2937),
-                              fontSize: 13,
+                              color: Color(0xFF08012D),
+                              fontSize: 15,
                             ),
                           ),
                         ),
@@ -731,8 +847,8 @@ class _DashboardPageState extends State<DashboardPage> {
                             'Your Price',
                             style: TextStyle(
                               fontWeight: FontWeight.w600,
-                              color: Color(0xFF1F2937),
-                              fontSize: 13,
+                              color: Color(0xFF08012D),
+                              fontSize: 15,
                             ),
                           ),
                         ),
@@ -741,8 +857,8 @@ class _DashboardPageState extends State<DashboardPage> {
                             'Kaso Benchmark Price',
                             style: TextStyle(
                               fontWeight: FontWeight.w600,
-                              color: Color(0xFF1F2937),
-                              fontSize: 13,
+                              color: Color(0xFF08012D),
+                              fontSize: 15,
                             ),
                           ),
                         ),
@@ -751,8 +867,8 @@ class _DashboardPageState extends State<DashboardPage> {
                             'Saving %',
                             style: TextStyle(
                               fontWeight: FontWeight.w600,
-                              color: Color(0xFF1F2937),
-                              fontSize: 13,
+                              color: Color(0xFF08012D),
+                              fontSize: 15,
                             ),
                           ),
                         ),
@@ -761,8 +877,8 @@ class _DashboardPageState extends State<DashboardPage> {
                             'Monthly Savings',
                             style: TextStyle(
                               fontWeight: FontWeight.w600,
-                              color: Color(0xFF1F2937),
-                              fontSize: 13,
+                              color: Color(0xFF08012D),
+                              fontSize: 15,
                             ),
                           ),
                         ),
@@ -770,11 +886,12 @@ class _DashboardPageState extends State<DashboardPage> {
                       rows: savingsItems.map((item) {
                         final yourPrice = item['yourPrice'] as double;
                         final benchmarkPrice = item['benchmarkPrice'] as double;
-                        final monthlyCost = item['monthlyCost'] as double;
+                        final monthlyQuantity = item['monthlyQuantity'] as int;
                         final savingPercent =
                             ((yourPrice - benchmarkPrice) / yourPrice * 100);
+                        // Monthly savings = (price difference) * monthly quantity
                         final monthlySavings =
-                            monthlyCost * (savingPercent / 100);
+                            (yourPrice - benchmarkPrice) * monthlyQuantity;
 
                         return DataRow(
                           cells: [
@@ -782,7 +899,7 @@ class _DashboardPageState extends State<DashboardPage> {
                               Text(
                                 item['name'] as String,
                                 style: const TextStyle(
-                                  fontSize: 13,
+                                  fontSize: 15,
                                   color: Color(0xFF1F2937),
                                   fontWeight: FontWeight.w500,
                                 ),
@@ -792,7 +909,7 @@ class _DashboardPageState extends State<DashboardPage> {
                               Text(
                                 item['supplier'] as String,
                                 style: const TextStyle(
-                                  fontSize: 13,
+                                  fontSize: 15,
                                   color: Color(0xFF6B7280),
                                 ),
                               ),
@@ -801,7 +918,7 @@ class _DashboardPageState extends State<DashboardPage> {
                               Text(
                                 'AED ${yourPrice.toStringAsFixed(2)}',
                                 style: const TextStyle(
-                                  fontSize: 13,
+                                  fontSize: 15,
                                   color: Color(0xFF6B7280),
                                 ),
                               ),
@@ -810,7 +927,7 @@ class _DashboardPageState extends State<DashboardPage> {
                               Text(
                                 'AED ${benchmarkPrice.toStringAsFixed(2)}',
                                 style: const TextStyle(
-                                  fontSize: 13,
+                                  fontSize: 15,
                                   color: Color(0xFF6B7280),
                                 ),
                               ),
@@ -818,14 +935,14 @@ class _DashboardPageState extends State<DashboardPage> {
                             DataCell(
                               Container(
                                 padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 6,
+                                  horizontal: 12,
+                                  vertical: 7,
                                 ),
                                 decoration: BoxDecoration(
                                   color: savingPercent > 20
                                       ? const Color(0xFF10B981).withOpacity(0.1)
                                       : const Color(
-                                          0xFF3B82F6,
+                                          0xFF08012D,
                                         ).withOpacity(0.1),
                                   borderRadius: BorderRadius.circular(6),
                                 ),
@@ -835,20 +952,20 @@ class _DashboardPageState extends State<DashboardPage> {
                                     Text(
                                       '${savingPercent.toStringAsFixed(0)}%',
                                       style: TextStyle(
-                                        fontSize: 13,
+                                        fontSize: 15,
                                         color: savingPercent > 20
                                             ? const Color(0xFF10B981)
-                                            : const Color(0xFF3B82F6),
+                                            : const Color(0xFF08012D),
                                         fontWeight: FontWeight.w600,
                                       ),
                                     ),
-                                    const SizedBox(width: 4),
+                                    const SizedBox(width: 5),
                                     Icon(
                                       Icons.arrow_downward,
-                                      size: 14,
+                                      size: 16,
                                       color: savingPercent > 20
                                           ? const Color(0xFF10B981)
-                                          : const Color(0xFF3B82F6),
+                                          : const Color(0xFF08012D),
                                     ),
                                   ],
                                 ),
@@ -856,11 +973,11 @@ class _DashboardPageState extends State<DashboardPage> {
                             ),
                             DataCell(
                               Text(
-                                'Provide data',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: Colors.grey[500],
-                                  fontStyle: FontStyle.italic,
+                                'AED ${monthlySavings.toStringAsFixed(0)}',
+                                style: const TextStyle(
+                                  fontSize: 15,
+                                  color: Color(0xFF10B981),
+                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
                             ),

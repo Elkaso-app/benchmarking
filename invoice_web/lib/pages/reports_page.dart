@@ -1766,7 +1766,7 @@ class _ReportsPageState extends State<ReportsPage>
                     barRods: [
                       BarChartRodData(
                         toY: 42,
-                        color: const Color(0xFF3B82F6),
+                        color: const Color(0xFF08012D),
                         width: 24,
                       ),
                     ],

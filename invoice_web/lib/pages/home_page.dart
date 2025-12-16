@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../config.dart';
 import '../services/api_service.dart';
+import '../services/font_size_provider.dart';
 import 'upload_page.dart';
 import 'dashboard_page.dart';
 import 'reports_page.dart';
@@ -19,7 +20,6 @@ class _HomePageState extends State<HomePage>
   bool _isBackendHealthy = false;
   bool _isCheckingHealth = true;
   int _selectedIndex = 0;
-  bool _isHoveringNav = false;
   int? _hoveredIndex;
 
   @override
@@ -83,9 +83,9 @@ class _HomePageState extends State<HomePage>
   Widget _buildTopNavigationBar() {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF1E3A8A), // Navy blue
+        color: const Color(0xFF08012D), // Navy blue
         border: Border(
-          bottom: BorderSide(color: const Color(0xFF1E3A8A), width: 1),
+          bottom: BorderSide(color: const Color(0xFF08012D), width: 1),
         ),
       ),
       child: Column(
@@ -96,27 +96,11 @@ class _HomePageState extends State<HomePage>
             padding: const EdgeInsets.symmetric(horizontal: 32),
             child: Row(
               children: [
-                // Logo
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFE53E51),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(
-                    Icons.receipt_long_rounded,
-                    color: Colors.white,
-                    size: 24,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                const Text(
-                  AppConfig.appName,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+                // Kaso Logo
+                Image.asset(
+                  'assets/kaso_logo.png',
+                  height: 32,
+                  fit: BoxFit.contain,
                 ),
                 const SizedBox(width: 48),
                 // Navigation Items
@@ -144,6 +128,9 @@ class _HomePageState extends State<HomePage>
                   index: 3,
                 ),
                 const Spacer(),
+                // Font Size Controls
+                _buildFontSizeControls(),
+                const SizedBox(width: 16),
                 // Backend status indicator
                 Container(
                   padding: const EdgeInsets.symmetric(
@@ -217,7 +204,7 @@ class _HomePageState extends State<HomePage>
                         radius: 14,
                         child: Icon(
                           Icons.person_rounded,
-                          color: const Color(0xFF1E3A8A),
+                          color: const Color(0xFF08012D),
                           size: 16,
                         ),
                       ),
@@ -301,6 +288,97 @@ class _HomePageState extends State<HomePage>
                 ),
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFontSizeControls() {
+    final fontSizeProvider = context.watch<FontSizeProvider>();
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Font size icon
+          Icon(
+            Icons.text_fields_rounded,
+            color: Colors.white.withOpacity(0.7),
+            size: 18,
+          ),
+          const SizedBox(width: 8),
+          // Decrease button
+          _buildFontSizeButton(
+            icon: Icons.remove,
+            onPressed: fontSizeProvider.fontScale > FontSizeProvider.small
+                ? () => fontSizeProvider.decrease()
+                : null,
+            tooltip: 'Decrease font size',
+          ),
+          // Current size indicator
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Text(
+              fontSizeProvider.currentSizeLabel,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          // Increase button
+          _buildFontSizeButton(
+            icon: Icons.add,
+            onPressed: fontSizeProvider.fontScale < FontSizeProvider.extraLarge
+                ? () => fontSizeProvider.increase()
+                : null,
+            tooltip: 'Increase font size',
+          ),
+          const SizedBox(width: 4),
+          // Reset button
+          _buildFontSizeButton(
+            icon: Icons.restart_alt_rounded,
+            onPressed: fontSizeProvider.fontScale != FontSizeProvider.medium
+                ? () => fontSizeProvider.reset()
+                : null,
+            tooltip: 'Reset font size',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFontSizeButton({
+    required IconData icon,
+    required VoidCallback? onPressed,
+    required String tooltip,
+  }) {
+    return Tooltip(
+      message: tooltip,
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(4),
+        child: Container(
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: onPressed != null
+                ? Colors.white.withOpacity(0.15)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: Icon(
+            icon,
+            color: onPressed != null
+                ? Colors.white
+                : Colors.white.withOpacity(0.3),
+            size: 16,
           ),
         ),
       ),

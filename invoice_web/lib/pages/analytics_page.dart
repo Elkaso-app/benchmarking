@@ -9,8 +9,6 @@ class AnalyticsPage extends StatefulWidget {
 }
 
 class _AnalyticsPageState extends State<AnalyticsPage> {
-  int? _hoveredBarIndex;
-
   final List<Map<String, dynamic>> _savingsData = [
     {'name': 'Hamachi Fillet', 'price': 696.0, 'details': 'Hamachi Fillet'},
     {
@@ -107,7 +105,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
                 width: 16,
                 height: 16,
                 decoration: const BoxDecoration(
-                  color: Color(0xFF1E3A8A),
+                  color: Color(0xFF08012D),
                   shape: BoxShape.circle,
                 ),
               ),
@@ -137,29 +135,16 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
                 minY: 0,
                 barTouchData: BarTouchData(
                   enabled: true,
-                  handleBuiltInTouches: true,
-                  touchCallback: (FlTouchEvent event, barTouchResponse) {
-                    setState(() {
-                      if (!event.isInterestedForInteractions ||
-                          barTouchResponse == null ||
-                          barTouchResponse.spot == null) {
-                        _hoveredBarIndex = null;
-                        return;
-                      }
-                      _hoveredBarIndex =
-                          barTouchResponse.spot!.touchedBarGroupIndex;
-                    });
-                  },
                   touchTooltipData: BarTouchTooltipData(
-                    getTooltipColor: (group) => const Color(0xFF1F2937),
-                    tooltipPadding: const EdgeInsets.all(12),
-                    tooltipMargin: 12,
+                    getTooltipColor: (group) => Colors.transparent,
+                    tooltipPadding: EdgeInsets.zero,
+                    tooltipMargin: 8,
                     getTooltipItem: (group, groupIndex, rod, rodIndex) {
                       final item = _savingsData[groupIndex];
                       return BarTooltipItem(
-                        '${item['details']}\n${item['price'].toStringAsFixed(0)} AED',
+                        '${(item['price'] as double).toStringAsFixed(0)} AED',
                         const TextStyle(
-                          color: Colors.white,
+                          color: Color(0xFF08012D),
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
                         ),
@@ -237,23 +222,21 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
                 barGroups: _savingsData.asMap().entries.map((entry) {
                   final index = entry.key;
                   final item = entry.value;
+                  final price = item['price'] as double;
                   return BarChartGroupData(
                     x: index,
                     barRods: [
                       BarChartRodData(
-                        toY: item['price'] as double,
-                        color: _hoveredBarIndex == index
-                            ? const Color(0xFF1E3A8A).withOpacity(0.8)
-                            : const Color(0xFF1E3A8A),
+                        toY: price,
+                        color: const Color(0xFF08012D),
                         width: 50,
                         borderRadius: const BorderRadius.vertical(
                           top: Radius.circular(6),
                         ),
                       ),
                     ],
-                    showingTooltipIndicators: _hoveredBarIndex == index
-                        ? [0]
-                        : [],
+                    // Always show the price label on top of the bar
+                    showingTooltipIndicators: [0],
                   );
                 }).toList(),
               ),
