@@ -12,6 +12,12 @@ class InvoiceItem(BaseModel):
     unit_price: Optional[float] = Field(None, description="Unit price")
     total: Optional[float] = Field(None, description="Total price for this item")
     unit: Optional[str] = Field(None, description="Unit of measurement")
+    llm_confidence: Optional[float] = Field(
+        None,
+        description="LLM confidence score from 0 to 10 for this line item",
+        ge=0,
+        le=10,
+    )
 
 
 class InvoiceData(BaseModel):

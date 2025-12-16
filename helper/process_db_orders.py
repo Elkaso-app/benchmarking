@@ -117,9 +117,9 @@ def insert_invoice_items(conn, order_id: int, items: List[InvoiceItem], llm_mode
     
     insert_query = """
     INSERT INTO benchmarking.invoice_items 
-        (order_id, item_name, qty, uom, unit_price, net_price, llm, created_at, updated_at)
+        (order_id, item_name, qty, uom, unit_price, net_price, llm, llm_confidence, created_at, updated_at)
     VALUES 
-        (%s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
+        (%s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
     ON CONFLICT (order_id, item_name, qty, uom, unit_price, net_price) 
     DO NOTHING
     """
@@ -134,6 +134,7 @@ def insert_invoice_items(conn, order_id: int, items: List[InvoiceItem], llm_mode
             float(item.unit_price) if item.unit_price else None,
             float(item.total) if item.total else None,
             llm_model,
+            float(item.llm_confidence) if getattr(item, "llm_confidence", None) is not None else None,
         ))
     
     with conn.cursor() as cur:
