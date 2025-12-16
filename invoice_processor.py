@@ -55,9 +55,9 @@ class InvoiceProcessor:
         """
         return base64.b64encode(image_bytes).decode('utf-8')
     
-    def create_extraction_prompt(self, strict: bool = False) -> str:
+    def create_extraction_prompt(self) -> str:
         """Create the prompt for invoice data extraction."""
-        base = """You are an expert invoice data extractor. Analyze this invoice image and extract ALL items in a structured format.
+        return """You are an expert invoice data extractor. Analyze this invoice image and extract ALL items in a structured format.
 
 Extract the following information:
 1. Invoice metadata (number, date, vendor, customer, currency)
@@ -98,7 +98,14 @@ CRITICAL VALIDATION RULES:
 - For each item, VERIFY that: quantity × unit_price = total (net amount)
 - The "total" field should be the NET AMOUNT or AMOUNT BEFORE TAX (NOT the gross total with VAT)
 - If the math doesn't match, re-read the invoice carefully and correct the values
-- Extract values from the correct columns: Quantity, Price (unit price), Amount Before Tax (total)
+- The invoice contains a line-items TABLE with headers (examples): Unit | Qty | Rate | Total | VAT% | VAT Amount | Amount
+- Extract ONLY from the correct columns by header:
+  - quantity = value under 'Qty'
+  - unit_price = value under 'Rate'
+  - total = value under 'Total' (net amount before VAT)
+- DO NOT swap Qty and Rate. If unsure, SKIP the item (llm_confidence < 8.5)
+- Preserve decimals exactly as printed (e.g., 1.100, 4.500, 4.950)
+- Double-check each line by re-reading the same row across the columns before returning it
 - If you cannot read an item with at least 85% confidence/accuracy, SKIP that item entirely (llm_confidence < 8.5 → SKIP)
 - Only include items where you are confident about all values (description, quantity, unit_price, total)
 
@@ -109,32 +116,13 @@ Important:
 - Ensure all numbers are numeric types (not strings)
 - ALWAYS validate: quantity × unit_price = total
 - Return ONLY valid JSON, no additional text"""
-
-        if not strict:
-            return base
-
-        # Stricter prompt for retry: reduces column swap/decimal issues.
-        strict_addon = """
-
-STRICT MODE (RETRY):
-- The invoice contains a line-items TABLE with headers (examples): Unit | Qty | Rate | Total | VAT% | VAT Amount | Amount
-- Extract ONLY from the correct columns by header:
-  - quantity = value under 'Qty'
-  - unit_price = value under 'Rate'
-  - total = value under 'Total' (net amount before VAT)
-- DO NOT swap Qty and Rate. If unsure, SKIP the item (llm_confidence < 8.5).
-- Preserve decimals exactly as printed (e.g., 1.100, 4.500, 4.950).
-- Double-check each line by re-reading the same row across the columns before returning it.
-"""
-        return base + strict_addon
     
-    def process_with_openai(self, image_bytes: bytes, mime_type: str, strict: bool = False) -> InvoiceData:
+    def process_with_openai(self, image_bytes: bytes, mime_type: str) -> InvoiceData:
         """Process invoice using OpenAI GPT-4 Vision.
         
         Args:
             image_bytes: Image bytes of the invoice
             mime_type: MIME type for the image (image/png, image/jpeg, ...)
-            strict: Whether to use strict extraction prompt (retry mode)
             
         Returns:
             Extracted invoice data
@@ -149,7 +137,7 @@ STRICT MODE (RETRY):
                     "content": [
                         {
                             "type": "text",
-                            "text": self.create_extraction_prompt(strict=strict)
+                            "text": self.create_extraction_prompt()
                         },
                         {
                             "type": "image_url",
@@ -343,20 +331,10 @@ STRICT MODE (RETRY):
                     model_used=self.model
                 )
             
-            # Process with OpenAI (with validation + single retry)
+            # Process with OpenAI (with validation + normalization)
             image_bytes, mime_type = images[0]
-            invoice_data = self.process_with_openai(image_bytes, mime_type, strict=False)
+            invoice_data = self.process_with_openai(image_bytes, mime_type)
             invoice_data = self._normalize_and_filter_items(invoice_data)
-
-            # If too many invalid lines, retry once with strict prompt
-            if self._invalid_ratio(invoice_data) > 0.25:
-                invoice_data_retry = self.process_with_openai(image_bytes, mime_type, strict=True)
-                invoice_data_retry = self._normalize_and_filter_items(invoice_data_retry)
-                # Choose the better result (lower invalid ratio; tie-breaker: more items)
-                r1 = self._invalid_ratio(invoice_data)
-                r2 = self._invalid_ratio(invoice_data_retry)
-                if (r2 < r1) or (r2 == r1 and len(invoice_data_retry.items) > len(invoice_data.items)):
-                    invoice_data = invoice_data_retry
             
             processing_time = time.time() - start_time
             
