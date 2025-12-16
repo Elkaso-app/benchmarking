@@ -269,3 +269,4 @@ For issues or questions, check:
 - Database schema in `helper/tasks.md`
 - Invoice processor: `invoice_processor.py`
 - Models: `models.py`
+
