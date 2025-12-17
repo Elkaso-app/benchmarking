@@ -44,6 +44,9 @@ START_DATE = '2025-10-01 00:00:00'
 MAX_ORDERS_PER_RUN = 10000
 MAX_PARALLEL_ORDERS = 50  # Process up to 4 orders concurrently
 
+# Optional: restrict to specific order IDs (leave as None to process all)
+ORDER_IDS: Optional[List[int]] = None
+
 # Database connection
 DB_CONFIG = {
     'host': os.getenv('LOCAL_DB_HOST'),
@@ -71,6 +74,7 @@ def fetch_unprocessed_orders(conn) -> List[Dict]:
     Returns:
         List of dicts with keys: order_id, invoice_image, created_at
     """
+    params: List[object] = []
     query = """
     SELECT 
         o.order_id,
@@ -82,6 +86,14 @@ def fetch_unprocessed_orders(conn) -> List[Dict]:
         AND o.created_at >= %s
         AND o.invoice_image IS NOT NULL
         AND array_length(o.invoice_image, 1) > 0
+    """
+    params.extend([RESTAURANT_IDS, START_DATE])
+
+    if ORDER_IDS:
+        query += "        AND o.order_id = ANY(%s)\n"
+        params.append(ORDER_IDS)
+
+    query += """
         AND NOT EXISTS (
             SELECT 1 
             FROM benchmarking.invoice_items ii 
@@ -90,9 +102,10 @@ def fetch_unprocessed_orders(conn) -> List[Dict]:
     ORDER BY o.created_at DESC
     LIMIT %s
     """
+    params.append(MAX_ORDERS_PER_RUN)
     
     with conn.cursor() as cur:
-        cur.execute(query, (RESTAURANT_IDS, START_DATE, MAX_ORDERS_PER_RUN))
+        cur.execute(query, tuple(params))
         columns = [desc[0] for desc in cur.description]
         results = [dict(zip(columns, row)) for row in cur.fetchall()]
     
@@ -134,7 +147,7 @@ def insert_invoice_items(conn, order_id: int, items: List[InvoiceItem], llm_mode
             float(item.unit_price) if item.unit_price else None,
             float(item.total) if item.total else None,
             llm_model,
-            float(item.llm_confidence) if getattr(item, "llm_confidence", None) is not None else None,
+            float(getattr(item, "llm_confidence", None)) if getattr(item, "llm_confidence", None) is not None else None,
         ))
     
     with conn.cursor() as cur:

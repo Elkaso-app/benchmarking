@@ -1,25 +1,26 @@
-"""Invoice processing using OpenAI GPT-4 Vision API."""
+"""Invoice processing using Anthropic Claude (Vision)."""
 import base64
 import time
 import json
 from pathlib import Path
 from typing import List, Tuple, Optional
 import statistics
+from io import BytesIO
 import fitz  # PyMuPDF
 
-from openai import OpenAI
+from anthropic import Anthropic
 
 from config import settings
 from models import InvoiceData, ProcessingResult, InvoiceItem
 
 
 class InvoiceProcessor:
-    """Processes invoices using OpenAI GPT-4 Vision API."""
+    """Processes invoices using Anthropic Claude vision models."""
     
     def __init__(self):
-        """Initialize the processor with OpenAI client."""
-        self.client = OpenAI(api_key=settings.openai_api_key)
-        self.model = settings.openai_model
+        """Initialize the processor with Anthropic client."""
+        self.client = Anthropic(api_key=settings.claude_api_key)
+        self.model = settings.claude_model
     
     def pdf_to_images(self, pdf_path: Path, max_pages: int = 5) -> List[bytes]:
         """Convert PDF pages to images.
@@ -98,11 +99,17 @@ CRITICAL VALIDATION RULES:
 - For each item, VERIFY that: quantity × unit_price = total (net amount)
 - The "total" field should be the NET AMOUNT or AMOUNT BEFORE TAX (NOT the gross total with VAT)
 - If the math doesn't match, re-read the invoice carefully and correct the values
-- The invoice contains a line-items TABLE with headers (examples): Unit | Qty | Rate | Total | VAT% | VAT Amount | Amount
+- The invoice contains a line-items TABLE with headers (names may vary but are similar).
+- Identify the correct columns by HEADER TEXT (use the closest match):
+  - quantity column headers usually: Qty, QTY, Quantity
+  - unit_price column headers usually: Rate, Unit Price, Price, U/Price
+  - total (net) column headers usually: Total, Net, Net Amount, Amount Before Tax, Amount (Before VAT)
+  - unit column headers usually: Unit, UOM
+- VAT/gross columns often include: VAT, VAT%, VAT Amount, Tax, Amount (after VAT), Gross. Do NOT use these for `total`.
 - Extract ONLY from the correct columns by header:
-  - quantity = value under 'Qty'
-  - unit_price = value under 'Rate'
-  - total = value under 'Total' (net amount before VAT)
+  - quantity = value under the quantity column (Qty/Quantity)
+  - unit_price = value under the unit price column (Rate/Unit Price)
+  - total = value under the net total column (Total/Net/Before VAT)
 - DO NOT swap Qty and Rate. If unsure, SKIP the item (llm_confidence < 8.5)
 - Preserve decimals exactly as printed (e.g., 1.100, 4.500, 4.950)
 - Double-check each line by re-reading the same row across the columns before returning it
@@ -117,8 +124,8 @@ Important:
 - ALWAYS validate: quantity × unit_price = total
 - Return ONLY valid JSON, no additional text"""
     
-    def process_with_openai(self, image_bytes: bytes, mime_type: str) -> InvoiceData:
-        """Process invoice using OpenAI GPT-4 Vision.
+    def process_with_claude(self, image_bytes: bytes, mime_type: str) -> InvoiceData:
+        """Process invoice using Anthropic Claude Vision.
         
         Args:
             image_bytes: Image bytes of the invoice
@@ -128,31 +135,33 @@ Important:
             Extracted invoice data
         """
         base64_image = self.encode_image_base64(image_bytes)
-        
-        response = self.client.chat.completions.create(
+
+        message = self.client.messages.create(
             model=self.model,
+            max_tokens=4096,
+            temperature=0,
             messages=[
                 {
                     "role": "user",
                     "content": [
                         {
-                            "type": "text",
-                            "text": self.create_extraction_prompt()
+                            "type": "image",
+                            "source": {
+                                "type": "base64",
+                                "media_type": mime_type,
+                                "data": base64_image,
+                            },
                         },
-                        {
-                            "type": "image_url",
-                            "image_url": {
-                                "url": f"data:{mime_type};base64,{base64_image}"
-                            }
-                        }
-                    ]
+                        {"type": "text", "text": self.create_extraction_prompt()},
+                    ],
                 }
             ],
-            max_tokens=4096,
-            temperature=0
         )
-        
-        result_text = response.choices[0].message.content
+
+        # Join all returned text blocks (Claude returns content blocks)
+        result_text = "".join(
+            block.text for block in message.content if getattr(block, "type", None) == "text"
+        ).strip()
         
         # Extract JSON from response
         json_str = result_text.strip()
@@ -191,23 +200,6 @@ Important:
             invoice_data.items = []
             return invoice_data
 
-        # Median unit_price to help choose swap direction
-        prices = [i.unit_price for i in filtered if i.unit_price is not None]
-        median_price: Optional[float] = None
-        if prices:
-            try:
-                median_price = float(statistics.median(prices))
-            except Exception:
-                median_price = None
-
-        def within(x: float, lo: float, hi: float) -> bool:
-            return lo <= x <= hi
-
-        def score_price(p: float) -> float:
-            if median_price is None:
-                return 0.0
-            return abs(p - median_price)
-
         # Fixups
         fixed: List[InvoiceItem] = []
         for it in filtered:
@@ -217,24 +209,10 @@ Important:
 
             # Only operate when we have numbers
             if q is not None and p is not None and t is not None:
-                # 1) If math matches, consider swap if it seems more plausible
-                if abs((q * p) - t) <= 0.01:
-                    # Swap heuristic: does swapping make price closer to median?
-                    # (helps for zucchini-like cases where both satisfy multiplication)
-                    if (
-                        median_price is not None
-                        and within(float(q), 0.001, 5000.0)
-                        and within(float(p), 0.001, 5000.0)
-                    ):
-                        current = score_price(float(p))
-                        swapped = score_price(float(q))
-                        # If swapping makes unit_price much closer to median, accept swap
-                        if swapped + 1e-9 < current * 0.5:
-                            it.quantity, it.unit_price = it.unit_price, it.quantity
-                            # small confidence penalty for auto-fix
-                            if it.llm_confidence is not None:
-                                it.llm_confidence = max(0.0, float(it.llm_confidence) - 0.5)
-                else:
+                # IMPORTANT: do NOT auto-swap quantity <-> unit_price.
+                # We rely on the LLM + prompt to read the correct columns.
+                # 1) Decimal scale fix: try scaling qty or price by 10/100 ONLY when math doesn't match.
+                if abs((q * p) - t) > 0.01:
                     # 2) Decimal scale fix: try scaling qty or price by 10/100
                     candidates: List[Tuple[float, float]] = []
                     scales = [0.1, 0.01, 10.0, 100.0]
@@ -243,13 +221,11 @@ Important:
                         candidates.append((float(q), float(p) * s))  # scale price
                     best = None
                     for q2, p2 in candidates:
-                        if abs((q2 * p2) - float(t)) <= 0.01 and within(q2, 0.0001, 100000.0) and within(p2, 0.0001, 100000.0):
-                            # choose the candidate with unit_price closer to median
-                            metric = score_price(p2) if median_price is not None else 0.0
-                            if best is None or metric < best[0]:
-                                best = (metric, q2, p2)
+                        if abs((q2 * p2) - float(t)) <= 0.01:
+                            best = (q2, p2)
+                            break
                     if best is not None:
-                        _, q2, p2 = best
+                        q2, p2 = best
                         it.quantity = float(q2)
                         it.unit_price = float(p2)
                         if it.llm_confidence is not None:
@@ -288,6 +264,28 @@ Important:
             return "image/webp"
         # fallback
         return "image/png"
+
+    def _detect_mime_from_bytes(self, image_bytes: bytes, fallback: str) -> str:
+        """
+        Detect actual image mime type from bytes.
+        Claude validates media_type strictly; some files have wrong extension.
+        """
+        try:
+            from PIL import Image
+
+            img = Image.open(BytesIO(image_bytes))
+            fmt = (img.format or "").upper()
+            if fmt == "JPEG":
+                return "image/jpeg"
+            if fmt == "PNG":
+                return "image/png"
+            if fmt == "GIF":
+                return "image/gif"
+            if fmt == "WEBP":
+                return "image/webp"
+            return fallback
+        except Exception:
+            return fallback
     
     def process_invoice(self, file_path: Path) -> ProcessingResult:
         """Process a single invoice file (PDF or image).
@@ -309,7 +307,9 @@ Important:
                 # Read image file directly
                 with open(file_path, 'rb') as f:
                     image_bytes = f.read()
-                images = [(image_bytes, self._mime_for_suffix(file_ext))]
+                fallback_mime = self._mime_for_suffix(file_ext)
+                mime_type = self._detect_mime_from_bytes(image_bytes, fallback_mime)
+                images = [(image_bytes, mime_type)]
             elif file_ext == '.pdf':
                 # Convert PDF to images
                 images = [(b, "image/png") for b in self.pdf_to_images(file_path, max_pages=1)]  # first page
@@ -331,9 +331,9 @@ Important:
                     model_used=self.model
                 )
             
-            # Process with OpenAI (with validation + normalization)
+            # Process with Claude (with validation + normalization)
             image_bytes, mime_type = images[0]
-            invoice_data = self.process_with_openai(image_bytes, mime_type)
+            invoice_data = self.process_with_claude(image_bytes, mime_type)
             invoice_data = self._normalize_and_filter_items(invoice_data)
             
             processing_time = time.time() - start_time

@@ -1,6 +1,7 @@
 """Configuration management for the invoice processing system."""
 import os
 from pydantic_settings import BaseSettings
+from pydantic_settings import SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -11,6 +12,13 @@ class Settings(BaseSettings):
     
     # Model Configuration
     openai_model: str = "gpt-4o-2024-11-20"  # Latest GPT-4o with improved vision accuracy
+
+    # Anthropic (Claude) Configuration (optional)
+    claude_api_key: str = ""
+    claude_model: str = "claude-sonnet-4-0"
+
+    # LLM Provider (optional): "openai" or "anthropic"
+    llm_provider: str = "openai"
     
     # API Settings
     api_host: str = "127.0.0.1"
@@ -26,7 +34,7 @@ class Settings(BaseSettings):
     
     # Demo Mode - multiplies occurrences by random 13-23 for demo purposes
     demo: bool = False
-    
+
     # Database Settings (optional, for helper scripts)
     local_db_host: str = ""
     local_db_port: int = 5432
@@ -34,10 +42,13 @@ class Settings(BaseSettings):
     local_db_user: str = ""
     local_db_password: str = ""
     
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
-        case_sensitive = False  # Accept both OPENAI_API_KEY and openai_api_key
+    # IMPORTANT: allow extra env vars in .env without crashing
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=False,  # Accept both OPENAI_API_KEY and openai_api_key
+        extra="ignore",
+    )
 
 
 # Global settings instance
