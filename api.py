@@ -145,7 +145,7 @@ async def process_batch_invoices(files: List[UploadFile] = File(...)):
                 # Save uploaded file
                 content = await file.read()
                 tmp_file.write(content)
-        
+            
         # Process all invoices in parallel using ThreadPoolExecutor
         loop = asyncio.get_event_loop()
         with ThreadPoolExecutor(max_workers=min(len(temp_files), 10)) as executor:

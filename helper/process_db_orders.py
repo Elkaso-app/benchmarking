@@ -76,7 +76,7 @@ def fetch_unprocessed_orders(conn) -> List[Dict]:
     """
     params: List[object] = []
     query = """
-    SELECT 
+    SELECT
         o.order_id,
         o.invoice_image,
         o.created_at

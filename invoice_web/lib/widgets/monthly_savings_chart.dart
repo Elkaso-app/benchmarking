@@ -135,16 +135,16 @@ class MonthlySavingsChart extends StatelessWidget {
                               angle: -0.3,
                               child: AppConfig.demoMode
                                   ? ImageFiltered(
-                                      imageFilter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
-                                      child: Text(
-                                        itemNames[index],
-                                        style: const TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
+                                imageFilter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+                                child: Text(
+                                  itemNames[index],
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                                     )
                                   : Text(
                                       itemNames[index],
@@ -154,7 +154,7 @@ class MonthlySavingsChart extends StatelessWidget {
                                       ),
                                       maxLines: 2,
                                       overflow: TextOverflow.ellipsis,
-                                    ),
+                              ),
                             ),
                           );
                         },
@@ -224,14 +224,14 @@ class MonthlySavingsChart extends StatelessWidget {
                     children: [
                       AppConfig.demoMode
                           ? ImageFiltered(
-                              imageFilter: ImageFilter.blur(sigmaX: 3, sigmaY: 3),
-                              child: Text(
-                                name,
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
+                        imageFilter: ImageFilter.blur(sigmaX: 3, sigmaY: 3),
+                        child: Text(
+                          name,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
                             )
                           : Text(
                               name,
@@ -239,7 +239,7 @@ class MonthlySavingsChart extends StatelessWidget {
                                 fontSize: 12,
                                 fontWeight: FontWeight.w500,
                               ),
-                            ),
+                      ),
                       const SizedBox(width: 8),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -248,10 +248,10 @@ class MonthlySavingsChart extends StatelessWidget {
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
-                          '${_formatNumber(savingAmount)} $currency',
+                        '${_formatNumber(savingAmount)} $currency',
                           style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
                             color: Colors.white,
                           ),
                         ),

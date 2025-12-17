@@ -135,7 +135,7 @@ Important:
             Extracted invoice data
         """
         base64_image = self.encode_image_base64(image_bytes)
-
+        
         message = self.client.messages.create(
             model=self.model,
             max_tokens=4096,
@@ -311,7 +311,7 @@ Important:
                 mime_type = self._detect_mime_from_bytes(image_bytes, fallback_mime)
                 images = [(image_bytes, mime_type)]
             elif file_ext == '.pdf':
-                # Convert PDF to images
+            # Convert PDF to images
                 images = [(b, "image/png") for b in self.pdf_to_images(file_path, max_pages=1)]  # first page
             else:
                 return ProcessingResult(

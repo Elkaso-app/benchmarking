@@ -15,10 +15,16 @@ class Settings(BaseSettings):
 
     # Anthropic (Claude) Configuration (optional)
     claude_api_key: str = ""
-    claude_model: str = "claude-sonnet-4-0"
+    claude_model: str = "claude-sonnet-4-5-20250929"
 
     # LLM Provider (optional): "openai" or "anthropic"
     llm_provider: str = "openai"
+    
+    # Google Document AI Configuration
+    google_cloud_project: str = ""
+    docai_location: str = "us"
+    docai_processor_id: str = ""
+    docai_processor_version_id: str = "pretrained-invoice-v2.0-2023-12-06"
     
     # API Settings
     api_host: str = "127.0.0.1"

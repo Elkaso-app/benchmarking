@@ -215,20 +215,20 @@ class SavingsPieCharts extends StatelessWidget {
               Expanded(
                 child: AppConfig.demoMode
                     ? ImageFiltered(
-                        imageFilter: ImageFilter.blur(sigmaX: 3, sigmaY: 3),
-                        child: Text(
-                          name,
-                          style: const TextStyle(fontSize: 12),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
+                  imageFilter: ImageFilter.blur(sigmaX: 3, sigmaY: 3),
+                  child: Text(
+                    name,
+                    style: const TextStyle(fontSize: 12),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                       )
                     : Text(
                         name,
                         style: const TextStyle(fontSize: 12),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                      ),
+                ),
               ),
             ],
           ),

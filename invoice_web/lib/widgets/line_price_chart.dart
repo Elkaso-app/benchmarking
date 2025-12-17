@@ -92,20 +92,20 @@ class LinePriceChart extends StatelessWidget {
                           width: 100,
                           child: AppConfig.demoMode
                               ? ImageFiltered(
-                                  imageFilter: ImageFilter.blur(sigmaX: 4, sigmaY: 4),
-                                  child: Transform.rotate(
-                                    angle: -0.3,
-                                    child: Text(
-                                      itemNames[index],
-                                      style: const TextStyle(
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                      textAlign: TextAlign.center,
-                                    ),
-                                  ),
+                            imageFilter: ImageFilter.blur(sigmaX: 4, sigmaY: 4),
+                            child: Transform.rotate(
+                              angle: -0.3,
+                              child: Text(
+                                itemNames[index],
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
                                 )
                               : Transform.rotate(
                                   angle: -0.3,
@@ -119,7 +119,7 @@ class LinePriceChart extends StatelessWidget {
                                     overflow: TextOverflow.ellipsis,
                                     textAlign: TextAlign.center,
                                   ),
-                                ),
+                          ),
                         ),
                       );
                     },
