@@ -19,6 +19,10 @@ class _HomePageState extends State<HomePage>
   bool _isCheckingHealth = true;
   int _selectedIndex = 0;
   int? _hoveredIndex;
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
+  // Breakpoint for mobile/desktop
+  static const double mobileBreakpoint = 768;
 
   @override
   void initState() {
@@ -53,10 +57,18 @@ class _HomePageState extends State<HomePage>
     }
   }
 
+  bool _isMobile(BuildContext context) {
+    return MediaQuery.of(context).size.width < mobileBreakpoint;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final isMobile = _isMobile(context);
+
     return Scaffold(
+      key: _scaffoldKey,
       backgroundColor: const Color(0xFFFAFAFA),
+      drawer: isMobile ? _buildMobileDrawer() : null,
       body: !_isBackendHealthy && !_isCheckingHealth
           ? _buildBackendOfflineWidget()
           : Column(
@@ -68,144 +80,275 @@ class _HomePageState extends State<HomePage>
     );
   }
 
-  Widget _buildTopNavigationBar() {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFF08012D), // Navy blue
-        border: Border(
-          bottom: BorderSide(color: const Color(0xFF08012D), width: 1),
+  Widget _buildMobileDrawer() {
+    return Drawer(
+      backgroundColor: const Color(0xFF08012D),
+      child: SafeArea(
+        child: Column(
+          children: [
+            // Header with logo
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Row(
+                children: [
+                  Image.asset(
+                    'assets/kaso_logo.png',
+                    height: 28,
+                    fit: BoxFit.contain,
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Colors.white),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(color: Colors.white24),
+            // Navigation items
+            _buildDrawerNavItem(
+              icon: Icons.dashboard_rounded,
+              label: 'Dashboard',
+              index: 0,
+            ),
+            _buildDrawerNavItem(
+              icon: Icons.upload_file_rounded,
+              label: 'Upload',
+              index: 1,
+            ),
+            const Spacer(),
+            // Font size controls
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: _buildFontSizeControls(),
+            ),
+            const Divider(color: Colors.white24),
+            // Backend status
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: _buildMobileBackendStatus(),
+            ),
+          ],
         ),
       ),
-      child: Column(
-        children: [
-          // Main navigation bar
-          Container(
-            height: 70,
-            padding: const EdgeInsets.symmetric(horizontal: 32),
-            child: Row(
-              children: [
-                // Kaso Logo
-                Image.asset(
-                  'assets/kaso_logo.png',
-                  height: 32,
-                  fit: BoxFit.contain,
-                ),
-                const SizedBox(width: 48),
-                // Navigation Items
-                _buildTopNavItem(
-                  icon: Icons.dashboard_rounded,
-                  label: 'Dashboard',
-                  index: 0,
-                ),
-                const SizedBox(width: 8),
-                _buildTopNavItem(
-                  icon: Icons.upload_file_rounded,
-                  label: 'Upload',
-                  index: 1,
-                ),
-                const Spacer(),
-                // Font Size Controls
-                _buildFontSizeControls(),
-                const SizedBox(width: 16),
-                // Backend status indicator
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: _isBackendHealthy
-                        ? const Color(0xFF10B981).withValues(alpha: 0.1)
-                        : const Color(0xFFEF4444).withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: _isBackendHealthy
-                          ? const Color(0xFF10B981).withValues(alpha: 0.3)
-                          : const Color(0xFFEF4444).withValues(alpha: 0.3),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 6,
-                        height: 6,
-                        decoration: BoxDecoration(
-                          color: _isBackendHealthy
-                              ? const Color(0xFF10B981)
-                              : const Color(0xFFEF4444),
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        _isBackendHealthy ? 'Connected' : 'Offline',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: _isBackendHealthy
-                              ? const Color(0xFF10B981)
-                              : const Color(0xFFEF4444),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 12),
-                IconButton(
-                  icon: const Icon(Icons.refresh_rounded, size: 20),
-                  onPressed: _checkBackendHealth,
-                  tooltip: 'Refresh connection',
-                  style: IconButton.styleFrom(
-                    backgroundColor: Colors.white.withValues(alpha: 0.1),
-                    foregroundColor: Colors.white,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                // User profile
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      CircleAvatar(
-                        backgroundColor: Colors.white,
-                        radius: 14,
-                        child: Icon(
-                          Icons.person_rounded,
-                          color: const Color(0xFF08012D),
-                          size: 16,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Admin',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+    );
+  }
+
+  Widget _buildDrawerNavItem({
+    required IconData icon,
+    required String label,
+    required int index,
+  }) {
+    final isSelected = _selectedIndex == index;
+
+    return ListTile(
+      leading: Icon(icon, color: isSelected ? Colors.white : Colors.white70),
+      title: Text(
+        label,
+        style: TextStyle(
+          color: isSelected ? Colors.white : Colors.white70,
+          fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+          fontSize: 16,
+        ),
+      ),
+      selected: isSelected,
+      selectedTileColor: Colors.white.withValues(alpha: 0.15),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      onTap: () {
+        _onNavigationTapped(index);
+        Navigator.pop(context);
+      },
+    );
+  }
+
+  Widget _buildMobileBackendStatus() {
+    return Row(
+      children: [
+        Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(
+            color: _isBackendHealthy
+                ? const Color(0xFF10B981)
+                : const Color(0xFFEF4444),
+            shape: BoxShape.circle,
           ),
-        ],
+        ),
+        const SizedBox(width: 8),
+        Text(
+          _isBackendHealthy ? 'Backend Connected' : 'Backend Offline',
+          style: TextStyle(
+            color: _isBackendHealthy
+                ? const Color(0xFF10B981)
+                : const Color(0xFFEF4444),
+            fontSize: 14,
+          ),
+        ),
+        const Spacer(),
+        IconButton(
+          icon: const Icon(
+            Icons.refresh_rounded,
+            color: Colors.white70,
+            size: 20,
+          ),
+          onPressed: _checkBackendHealth,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTopNavigationBar() {
+    final isMobile = _isMobile(context);
+
+    return Container(
+      decoration: const BoxDecoration(
+        color: Color(0xFF08012D), // Navy blue
+        border: Border(bottom: BorderSide(color: Color(0xFF08012D), width: 1)),
+      ),
+      child: Container(
+        height: isMobile ? 60 : 70,
+        padding: EdgeInsets.symmetric(horizontal: isMobile ? 16 : 32),
+        child: Row(
+          children: [
+            // Mobile: Hamburger menu
+            if (isMobile)
+              IconButton(
+                icon: const Icon(Icons.menu, color: Colors.white),
+                onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+              ),
+            // Kaso Logo
+            Image.asset(
+              'assets/kaso_logo.png',
+              height: isMobile ? 26 : 32,
+              fit: BoxFit.contain,
+            ),
+            // Desktop: Navigation Items
+            if (!isMobile) ...[
+              const SizedBox(width: 48),
+              _buildTopNavItem(
+                icon: Icons.dashboard_rounded,
+                label: 'Dashboard',
+                index: 0,
+              ),
+              const SizedBox(width: 8),
+              _buildTopNavItem(
+                icon: Icons.upload_file_rounded,
+                label: 'Upload',
+                index: 1,
+              ),
+            ],
+            const Spacer(),
+            // Desktop: Font Size Controls
+            if (!isMobile) ...[
+              _buildFontSizeControls(),
+              const SizedBox(width: 16),
+            ],
+            // Backend status indicator (simplified on mobile)
+            if (isMobile)
+              Container(
+                width: 10,
+                height: 10,
+                decoration: BoxDecoration(
+                  color: _isBackendHealthy
+                      ? const Color(0xFF10B981)
+                      : const Color(0xFFEF4444),
+                  shape: BoxShape.circle,
+                ),
+              )
+            else
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: _isBackendHealthy
+                      ? const Color(0xFF10B981).withValues(alpha: 0.1)
+                      : const Color(0xFFEF4444).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: _isBackendHealthy
+                        ? const Color(0xFF10B981).withValues(alpha: 0.3)
+                        : const Color(0xFFEF4444).withValues(alpha: 0.3),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 6,
+                      height: 6,
+                      decoration: BoxDecoration(
+                        color: _isBackendHealthy
+                            ? const Color(0xFF10B981)
+                            : const Color(0xFFEF4444),
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      _isBackendHealthy ? 'Connected' : 'Offline',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: _isBackendHealthy
+                            ? const Color(0xFF10B981)
+                            : const Color(0xFFEF4444),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            // Desktop only: refresh and profile
+            if (!isMobile) ...[
+              const SizedBox(width: 12),
+              IconButton(
+                icon: const Icon(Icons.refresh_rounded, size: 20),
+                onPressed: _checkBackendHealth,
+                tooltip: 'Refresh connection',
+                style: IconButton.styleFrom(
+                  backgroundColor: Colors.white.withValues(alpha: 0.1),
+                  foregroundColor: Colors.white,
+                ),
+              ),
+              const SizedBox(width: 12),
+              // User profile
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircleAvatar(
+                      backgroundColor: Colors.white,
+                      radius: 14,
+                      child: Icon(
+                        Icons.person_rounded,
+                        color: const Color(0xFF08012D),
+                        size: 16,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Admin',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
