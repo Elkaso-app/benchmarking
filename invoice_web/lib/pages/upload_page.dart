@@ -79,7 +79,6 @@ class _UploadPageState extends State<UploadPage> {
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -90,18 +89,12 @@ class _UploadPageState extends State<UploadPage> {
           // Header
           const Text(
             'Upload & Process Invoices',
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
           Text(
             'Select PDF invoices to extract structured data',
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.grey[600],
-            ),
+            style: TextStyle(fontSize: 16, color: Colors.grey[600]),
           ),
           const SizedBox(height: 32),
 
@@ -119,10 +112,7 @@ class _UploadPageState extends State<UploadPage> {
                   const SizedBox(height: 16),
                   const Text(
                     'Select Invoice Files',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
                   const Text('Supported format: PDF'),
@@ -176,7 +166,7 @@ class _UploadPageState extends State<UploadPage> {
                                 color: Colors.white,
                               ),
                             )
-                          : const Icon(Icons.play_arrow),
+                          : const Icon(Icons.play_arrow_rounded),
                       label: Text(
                         _isProcessing ? 'Processing...' : 'Process Invoices',
                       ),
@@ -220,18 +210,18 @@ class _UploadPageState extends State<UploadPage> {
           if (_result != null) ...[
             const SizedBox(height: 32),
             _buildResultsSummary(),
-            
+
             // Only show analysis if we have data from server
             if (_costAnalysis != null) ...[
               const SizedBox(height: 40),
               const Divider(thickness: 2),
               const SizedBox(height: 32),
-              
+
               // 1. KPI Cards with big green numbers (Overview section)
               KpiCards(costAnalysis: _costAnalysis!),
-              
+
               const SizedBox(height: 32),
-              
+
               // 2. Bar Chart - Current Price vs Market Price per Unit
               Card(
                 elevation: 2,
@@ -253,7 +243,10 @@ class _UploadPageState extends State<UploadPage> {
                           const SizedBox(width: 8),
                           const Text(
                             'Your current price',
-                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                           const SizedBox(width: 24),
                           Container(
@@ -267,7 +260,10 @@ class _UploadPageState extends State<UploadPage> {
                           const SizedBox(width: 8),
                           const Text(
                             'Kaso market price (est)',
-                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                         ],
                       ),
@@ -277,27 +273,26 @@ class _UploadPageState extends State<UploadPage> {
                   ),
                 ),
               ),
-              
+
               const SizedBox(height: 32),
-              
+
               // 3. Two Pie Charts Side by Side
               SavingsPieCharts(costAnalysis: _costAnalysis!),
-              
+
               const SizedBox(height: 32),
-              
+
               // 4. Bottom Bar Chart - Monthly Savings per Item
               MonthlySavingsChart(costAnalysis: _costAnalysis!),
-              
+
               const SizedBox(height: 32),
-              
+
               // 5. Blurred Suppliers List
               BlurredSuppliersList(itemsList: _masterList),
-              
+
               const SizedBox(height: 32),
-              
+
               // 6. Master List of Items
-              if (_masterList != null)
-                _buildMasterList(),
+              if (_masterList != null) _buildMasterList(),
             ],
           ],
         ],
@@ -315,10 +310,7 @@ class _UploadPageState extends State<UploadPage> {
           children: [
             const Text(
               'Processing Summary',
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             Row(
@@ -392,18 +384,11 @@ class _UploadPageState extends State<UploadPage> {
             ),
           ),
           const SizedBox(height: 4),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey[600],
-            ),
-          ),
+          Text(label, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
         ],
       ),
     );
   }
-
 
   Widget _buildMasterList() {
     return Card(
@@ -418,18 +403,12 @@ class _UploadPageState extends State<UploadPage> {
                 const SizedBox(width: 12),
                 const Text(
                   'Master List - All Items',
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                 ),
                 const Spacer(),
                 Text(
                   '${_masterList!.length} unique items',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.grey[600],
-                  ),
+                  style: TextStyle(fontSize: 16, color: Colors.grey[600]),
                 ),
               ],
             ),
@@ -440,11 +419,38 @@ class _UploadPageState extends State<UploadPage> {
                 columnSpacing: 32,
                 headingRowColor: MaterialStateProperty.all(Colors.blue.shade50),
                 columns: const [
-                  DataColumn(label: Text('Item', style: TextStyle(fontWeight: FontWeight.bold))),
-                  DataColumn(label: Text('Quantity', style: TextStyle(fontWeight: FontWeight.bold)), numeric: true),
-                  DataColumn(label: Text('Unit', style: TextStyle(fontWeight: FontWeight.bold))),
-                  DataColumn(label: Text('Price Range', style: TextStyle(fontWeight: FontWeight.bold))),
-                  DataColumn(label: Text('Count', style: TextStyle(fontWeight: FontWeight.bold)), numeric: true),
+                  DataColumn(
+                    label: Text(
+                      'Item',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  DataColumn(
+                    label: Text(
+                      'Quantity',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    numeric: true,
+                  ),
+                  DataColumn(
+                    label: Text(
+                      'Unit',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  DataColumn(
+                    label: Text(
+                      'Price Range',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  DataColumn(
+                    label: Text(
+                      'Count',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    numeric: true,
+                  ),
                 ],
                 rows: _masterList!.map((item) {
                   final priceMin = item['price_min'];
@@ -454,25 +460,30 @@ class _UploadPageState extends State<UploadPage> {
                     if (priceMin == priceMax) {
                       priceRange = priceMin.toStringAsFixed(2);
                     } else {
-                      priceRange = '[${priceMin.toStringAsFixed(2)}, ${priceMax.toStringAsFixed(2)}]';
+                      priceRange =
+                          '[${priceMin.toStringAsFixed(2)}, ${priceMax.toStringAsFixed(2)}]';
                     }
                   }
-                  
-                  return DataRow(cells: [
-                    DataCell(
-                      ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 300),
-                        child: ImageFiltered(
-                          imageFilter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
-                          child: Text(item['description'] ?? ''),
+
+                  return DataRow(
+                    cells: [
+                      DataCell(
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 300),
+                          child: ImageFiltered(
+                            imageFilter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+                            child: Text(item['description'] ?? ''),
+                          ),
                         ),
                       ),
-                    ),
-                    DataCell(Text((item['total_quantity'] ?? 0).toStringAsFixed(1))),
-                    DataCell(Text(item['unit'] ?? '-')),
-                    DataCell(Text(priceRange)),
-                    DataCell(Text('${item['occurrences']}')),
-                  ]);
+                      DataCell(
+                        Text((item['total_quantity'] ?? 0).toStringAsFixed(1)),
+                      ),
+                      DataCell(Text(item['unit'] ?? '-')),
+                      DataCell(Text(priceRange)),
+                      DataCell(Text('${item['occurrences']}')),
+                    ],
+                  );
                 }).toList(),
               ),
             ),
@@ -481,7 +492,4 @@ class _UploadPageState extends State<UploadPage> {
       ),
     );
   }
-
 }
-
-

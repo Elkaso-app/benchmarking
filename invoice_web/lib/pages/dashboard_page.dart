@@ -1,21 +1,225 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 
+/// ============================================================================
+/// CENTRALIZED DASHBOARD DATA SOURCE
+/// ============================================================================
+///
+/// This file contains a single source of truth for all dashboard data.
+/// All charts, tables, and metrics use the same underlying data model.
+///
+/// HOW TO MAP TO API:
+/// -----------------
+/// 1. Create API endpoint: GET /api/dashboard/summary
+/// 2. Response format should match DashboardData structure:
+///    {
+///      "items": [
+///        {
+///          "name": "Chicken Breast (kg)",
+///          "displayName": "Chicken Breast",
+///          "supplier": "Al Rawdah Foods",
+///          "yourPrice": 18.0,
+///          "benchmarkPrice": 15.0,
+///          "monthlyQuantity": 150
+///        },
+///        ...
+///      ],
+///      "generatedDate": "2024-12-09T00:00:00Z"
+///    }
+///
+/// 3. Replace _initializeDemoData() with API call:
+///    ```dart
+///    Future<void> _loadDashboardData() async {
+///      final response = await apiService.getDashboardSummary();
+///      setState(() {
+///        _dashboardData = DashboardData(
+///          items: response['items'].map((json) =>
+///            DashboardItemData(
+///              name: json['name'],
+///              supplier: json['supplier'],
+///              yourPrice: json['yourPrice'],
+///              benchmarkPrice: json['benchmarkPrice'],
+///              monthlyQuantity: json['monthlyQuantity'],
+///              displayName: json['displayName'],
+///            )
+///          ).toList(),
+///          generatedDate: DateTime.parse(response['generatedDate']),
+///        );
+///      });
+///    }
+///    ```
+///
+/// BENEFITS:
+/// --------
+/// - Single source of truth for all dashboard data
+/// - Consistent values across all visualizations
+/// - Easy to update demo data in one place
+/// - Automatic calculation of aggregate metrics
+/// - Type-safe data access
+///
+/// ============================================================================
+
+// Data model for individual items
+class DashboardItemData {
+  final String name;
+  final String supplier;
+  final double yourPrice;
+  final double benchmarkPrice;
+  final int monthlyQuantity;
+  final String displayName; // For chart labels (shorter/multi-line)
+
+  DashboardItemData({
+    required this.name,
+    required this.supplier,
+    required this.yourPrice,
+    required this.benchmarkPrice,
+    required this.monthlyQuantity,
+    String? displayName,
+  }) : displayName = displayName ?? name;
+
+  // Calculated properties
+  double get savingPercent =>
+      ((yourPrice - benchmarkPrice) / yourPrice * 100).clamp(0, 100);
+  double get monthlySavings => (yourPrice - benchmarkPrice) * monthlyQuantity;
+  double get priceDifference => yourPrice - benchmarkPrice;
+}
+
+// Centralized data source for the entire dashboard
+class DashboardData {
+  final List<DashboardItemData> items;
+  final DateTime generatedDate;
+
+  DashboardData({required this.items, DateTime? generatedDate})
+    : generatedDate = generatedDate ?? DateTime.now();
+
+  // Calculated aggregate metrics
+  double get totalMonthlySavings =>
+      items.fold(0, (sum, item) => sum + item.monthlySavings);
+
+  double get averageSavingPercent => items.isEmpty
+      ? 0
+      : items.fold(0.0, (sum, item) => sum + item.savingPercent) / items.length;
+
+  int get itemsOverpriced =>
+      items.where((item) => item.savingPercent > 10).length;
+
+  int get totalItems => items.length;
+
+  // Get top N items by monthly savings
+  List<DashboardItemData> getTopSavingsItems(int n) {
+    final sorted = List<DashboardItemData>.from(items)
+      ..sort((a, b) => b.monthlySavings.compareTo(a.monthlySavings));
+    return sorted.take(n).toList();
+  }
+}
+
 class DashboardPage extends StatefulWidget {
   final VoidCallback onNavigateToUpload;
-  final VoidCallback onNavigateToReports;
 
-  const DashboardPage({
-    super.key,
-    required this.onNavigateToUpload,
-    required this.onNavigateToReports,
-  });
+  const DashboardPage({super.key, required this.onNavigateToUpload});
 
   @override
   State<DashboardPage> createState() => _DashboardPageState();
 }
 
 class _DashboardPageState extends State<DashboardPage> {
+  // SINGLE SOURCE OF TRUTH for all dashboard data
+  // In production, this would be loaded from API: GET /api/dashboard/summary
+  late final DashboardData _dashboardData;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeDemoData();
+  }
+
+  void _initializeDemoData() {
+    _dashboardData = DashboardData(
+      generatedDate: DateTime(2024, 12, 9),
+      items: [
+        // HIGH SAVINGS ITEMS (>20%)
+        DashboardItemData(
+          name: 'Premium Salmon Fillet (kg)',
+          displayName: 'Salmon Fillet',
+          supplier: 'Ocean Fresh Trading',
+          yourPrice: 85.0,
+          benchmarkPrice: 65.0,
+          monthlyQuantity: 120,
+        ),
+        DashboardItemData(
+          name: 'Italian Extra Virgin Olive Oil (5L)',
+          displayName: 'Olive Oil (5L)',
+          supplier: 'Mediterranean Foods',
+          yourPrice: 195.0,
+          benchmarkPrice: 155.0,
+          monthlyQuantity: 15,
+        ),
+        DashboardItemData(
+          name: 'Wagyu Beef Striploin (kg)',
+          displayName: 'Wagyu Beef',
+          supplier: 'Prime Cuts International',
+          yourPrice: 420.0,
+          benchmarkPrice: 340.0,
+          monthlyQuantity: 25,
+        ),
+
+        // MODERATE SAVINGS (10-20%)
+        DashboardItemData(
+          name: 'Chicken Breast Boneless (kg)',
+          displayName: 'Chicken Breast',
+          supplier: 'Al Rawdah Foods',
+          yourPrice: 22.0,
+          benchmarkPrice: 18.5,
+          monthlyQuantity: 200,
+        ),
+        DashboardItemData(
+          name: 'King Prawns Raw (kg)',
+          displayName: 'King Prawns',
+          supplier: 'Seafood Specialists',
+          yourPrice: 95.0,
+          benchmarkPrice: 82.0,
+          monthlyQuantity: 75,
+        ),
+        DashboardItemData(
+          name: 'Premium Basmati Rice (20kg)',
+          displayName: 'Basmati Rice',
+          supplier: 'Global Grains LLC',
+          yourPrice: 48.0,
+          benchmarkPrice: 42.0,
+          monthlyQuantity: 30,
+        ),
+
+        // LOW SAVINGS (<10%)
+        DashboardItemData(
+          name: 'Organic Roma Tomatoes (kg)',
+          displayName: 'Tomatoes (kg)',
+          supplier: 'Fresh Harvest Co',
+          yourPrice: 6.2,
+          benchmarkPrice: 5.8,
+          monthlyQuantity: 250,
+        ),
+        DashboardItemData(
+          name: 'Aged Cheddar Cheese Block (kg)',
+          displayName: 'Cheddar Cheese',
+          supplier: 'Dairy Best Trading',
+          yourPrice: 45.0,
+          benchmarkPrice: 42.5,
+          monthlyQuantity: 60,
+        ),
+
+        // GOOD DEAL (already below market)
+        DashboardItemData(
+          name: 'Black Angus Ribeye (kg)',
+          displayName: 'Black Angus',
+          supplier: 'Premium Meats Hub',
+          yourPrice: 115.0,
+          benchmarkPrice: 125.0,
+          monthlyQuantity: 50,
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -52,6 +256,8 @@ class _DashboardPageState extends State<DashboardPage> {
                 );
               },
             ),
+            const SizedBox(height: 32),
+            _buildMonthlySavingsChart(),
             const SizedBox(height: 32),
             _buildItemizedSavingsTable(),
           ],
@@ -105,7 +311,7 @@ class _DashboardPageState extends State<DashboardPage> {
               ),
               const SizedBox(height: 6),
               Text(
-                'Based on your latest supplier invoices  •  Generated on Dec 9, 2024',
+                'Based on your latest supplier invoices  •  Generated on ${_formatDate(_dashboardData.generatedDate)}',
                 style: TextStyle(fontSize: 16, color: Colors.grey[600]),
                 overflow: TextOverflow.ellipsis,
                 maxLines: 2,
@@ -161,6 +367,11 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Widget _buildTopStatsCards() {
+    final totalSavings = _dashboardData.totalMonthlySavings;
+    final avgSavingPercent = _dashboardData.averageSavingPercent;
+    final overpriced = _dashboardData.itemsOverpriced;
+    final totalItems = _dashboardData.totalItems;
+
     return LayoutBuilder(
       builder: (context, constraints) {
         return IntrinsicHeight(
@@ -171,7 +382,7 @@ class _DashboardPageState extends State<DashboardPage> {
                 flex: 1,
                 child: _buildStatCard(
                   title: 'Total Monthly Savings Potential',
-                  value: 'AED 3,420',
+                  value: 'AED ${totalSavings.toStringAsFixed(0)}',
                   subtitle: '',
                   icon: Icons.trending_up,
                   iconColor: const Color(0xFF10B981),
@@ -183,12 +394,12 @@ class _DashboardPageState extends State<DashboardPage> {
                 flex: 1,
                 child: _buildStatCard(
                   title: 'Average Cost Reduction per Item',
-                  value: '12%',
-                  subtitle: 'Across 25 benchmarked items',
+                  value: '${avgSavingPercent.toStringAsFixed(0)}%',
+                  subtitle: 'Across $totalItems benchmarked items',
                   icon: Icons.help_outline,
                   iconColor: Colors.grey[400]!,
                   hasProgressBar: true,
-                  progressValue: 0.12,
+                  progressValue: avgSavingPercent / 100,
                 ),
               ),
               const SizedBox(width: 24),
@@ -196,14 +407,14 @@ class _DashboardPageState extends State<DashboardPage> {
                 flex: 1,
                 child: _buildStatCard(
                   title: 'Items Overpriced',
-                  value: '8 /25',
+                  value: '$overpriced /$totalItems',
                   subtitle: 'paying >10% above market average',
                   icon: Icons.error_outline,
                   iconColor: const Color(0xFFEF4444),
                   hasProgressBar: false,
                   showDots: true,
-                  totalDots: 25,
-                  filledDots: 8,
+                  totalDots: totalItems,
+                  filledDots: overpriced,
                 ),
               ),
             ],
@@ -313,23 +524,25 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Widget _buildPriceComparisonChart() {
-    final items = [
-      {'name': 'Chicken Breast', 'yourPrice': 18.0, 'benchmark': 15.0},
-      {'name': 'Olive Oil (5L)', 'yourPrice': 180.0, 'benchmark': 155.0},
-      {'name': 'Basmati Rice', 'yourPrice': 42.0, 'benchmark': 38.0},
-      {'name': 'Tomatoes (kg)', 'yourPrice': 5.5, 'benchmark': 5.2},
-      {'name': 'Cheddar Cheese', 'yourPrice': 32.0, 'benchmark': 30.0},
-      {'name': 'Black Angus', 'yourPrice': 115.0, 'benchmark': 125.0},
-    ];
+    // Use centralized data
+    final items = _dashboardData.items
+        .map(
+          (item) => {
+            'name': item.displayName,
+            'yourPrice': item.yourPrice,
+            'benchmark': item.benchmarkPrice,
+          },
+        )
+        .toList();
 
     // Calculate totals for the "Total" bar
-    double totalYourPrice = items.fold(
-      0,
-      (sum, item) => sum + (item['yourPrice'] as double),
+    double totalYourPrice = _dashboardData.items.fold(
+      0.0,
+      (sum, item) => sum + item.yourPrice,
     );
-    double totalBenchmark = items.fold(
-      0,
-      (sum, item) => sum + (item['benchmark'] as double),
+    double totalBenchmark = _dashboardData.items.fold(
+      0.0,
+      (sum, item) => sum + item.benchmarkPrice,
     );
 
     // Add total as the first item
@@ -651,9 +864,11 @@ class _DashboardPageState extends State<DashboardPage> {
                   vertical: 7,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
+                  color: Colors.white.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.white.withOpacity(0.3)),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.3),
+                  ),
                 ),
                 child: const Text(
                   'Coming Soon',
@@ -705,7 +920,7 @@ class _DashboardPageState extends State<DashboardPage> {
           width: 28,
           height: 28,
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.2),
+            color: Colors.white.withValues(alpha: 0.2),
             shape: BoxShape.circle,
           ),
           child: Center(
@@ -725,47 +940,198 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
+  Widget _buildMonthlySavingsChart() {
+    // Get top 5 items by monthly savings from centralized data
+    final topItems = _dashboardData.getTopSavingsItems(5);
+    final savingsData = topItems
+        .map((item) => {'name': item.displayName, 'price': item.monthlySavings})
+        .toList();
+
+    // Calculate max Y for chart scaling
+    final maxSavings = topItems.isEmpty
+        ? 900.0
+        : topItems.first.monthlySavings * 1.2;
+
+    return Container(
+      padding: const EdgeInsets.all(32),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Text(
+                'Monthly saving potential',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF08012D),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Container(
+                width: 16,
+                height: 16,
+                decoration: const BoxDecoration(
+                  color: Color(0xFF08012D),
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'Monthly Savings',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Color(0xFF6B7280),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Monthly Savings (AED)',
+            style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+          ),
+          const SizedBox(height: 40),
+          SizedBox(
+            height: 500,
+            child: BarChart(
+              BarChartData(
+                alignment: BarChartAlignment.spaceEvenly,
+                maxY: maxSavings,
+                minY: 0,
+                barTouchData: BarTouchData(
+                  enabled: true,
+                  touchTooltipData: BarTouchTooltipData(
+                    getTooltipColor: (group) => Colors.transparent,
+                    tooltipPadding: EdgeInsets.zero,
+                    tooltipMargin: 8,
+                    getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                      final item = savingsData[groupIndex];
+                      return BarTooltipItem(
+                        '${(item['price'] as double).toStringAsFixed(0)} AED',
+                        const TextStyle(
+                          color: Color(0xFF08012D),
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                titlesData: FlTitlesData(
+                  show: true,
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 100,
+                      getTitlesWidget: (value, meta) {
+                        if (value.toInt() >= 0 &&
+                            value.toInt() < savingsData.length) {
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 12),
+                            child: Text(
+                              savingsData[value.toInt()]['name'] as String,
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: Color(0xFF6B7280),
+                              ),
+                              textAlign: TextAlign.center,
+                              maxLines: 4,
+                            ),
+                          );
+                        }
+                        return const Text('');
+                      },
+                    ),
+                  ),
+                  leftTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 50,
+                      interval: (maxSavings / 4).ceilToDouble(),
+                      getTitlesWidget: (value, meta) {
+                        return Text(
+                          value.toInt().toString(),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF6B7280),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  topTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  rightTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                ),
+                gridData: FlGridData(
+                  show: true,
+                  drawVerticalLine: false,
+                  horizontalInterval: (maxSavings / 4).ceilToDouble(),
+                  getDrawingHorizontalLine: (value) {
+                    return FlLine(
+                      color: const Color(0xFFF3F4F6),
+                      strokeWidth: 1,
+                    );
+                  },
+                ),
+                borderData: FlBorderData(
+                  show: true,
+                  border: Border(
+                    left: BorderSide(color: Colors.grey[300]!, width: 1),
+                    bottom: BorderSide(color: Colors.grey[300]!, width: 1),
+                  ),
+                ),
+                barGroups: savingsData.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final item = entry.value;
+                  final price = item['price'] as double;
+                  return BarChartGroupData(
+                    x: index,
+                    barRods: [
+                      BarChartRodData(
+                        toY: price,
+                        color: const Color(0xFF08012D),
+                        width: 50,
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(6),
+                        ),
+                      ),
+                    ],
+                    // Always show the price label on top of the bar
+                    showingTooltipIndicators: [0],
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildItemizedSavingsTable() {
-    // Demo data - In production, this would come from backend API
-    // API endpoint: GET /api/savings/itemized
-    // Response structure: { items: [...], totalMonthlySavings: number }
-    final savingsItems = [
-      {
-        'name': 'Chicken Breast (kg)',
-        'supplier': 'Al Rawdah Foods',
-        'yourPrice': 24.0,
-        'benchmarkPrice': 19.0,
-        'monthlyQuantity': 150, // kg per month
-      },
-      {
-        'name': 'Italian Tomatoes (kg)',
-        'supplier': 'Fresh Fruits Co',
-        'yourPrice': 6.5,
-        'benchmarkPrice': 4.2,
-        'monthlyQuantity': 200, // kg per month
-      },
-      {
-        'name': 'Olive Oil Extra Virgin (5L)',
-        'supplier': 'Global Foods LLC',
-        'yourPrice': 180.0,
-        'benchmarkPrice': 155.0,
-        'monthlyQuantity': 12, // bottles per month
-      },
-      {
-        'name': 'Basmati Rice (20kg)',
-        'supplier': 'Global Foods LLC',
-        'yourPrice': 45.0,
-        'benchmarkPrice': 38.0,
-        'monthlyQuantity': 25, // bags per month
-      },
-      {
-        'name': 'Cheddar Cheese Block (kg)',
-        'supplier': 'Dairy Best Trading',
-        'yourPrice': 32.0,
-        'benchmarkPrice': 28.0,
-        'monthlyQuantity': 80, // kg per month
-      },
-    ];
+    // Use centralized data - filter items with savings > 10%
+    // In production, this would come from backend API: GET /api/savings/itemized
+    final savingsItems =
+        _dashboardData.items.where((item) => item.savingPercent > 10).toList()
+          ..sort((a, b) => b.monthlySavings.compareTo(a.monthlySavings));
 
     return Container(
       padding: const EdgeInsets.all(24),
@@ -884,20 +1250,11 @@ class _DashboardPageState extends State<DashboardPage> {
                         ),
                       ],
                       rows: savingsItems.map((item) {
-                        final yourPrice = item['yourPrice'] as double;
-                        final benchmarkPrice = item['benchmarkPrice'] as double;
-                        final monthlyQuantity = item['monthlyQuantity'] as int;
-                        final savingPercent =
-                            ((yourPrice - benchmarkPrice) / yourPrice * 100);
-                        // Monthly savings = (price difference) * monthly quantity
-                        final monthlySavings =
-                            (yourPrice - benchmarkPrice) * monthlyQuantity;
-
                         return DataRow(
                           cells: [
                             DataCell(
                               Text(
-                                item['name'] as String,
+                                item.name,
                                 style: const TextStyle(
                                   fontSize: 15,
                                   color: Color(0xFF1F2937),
@@ -907,7 +1264,7 @@ class _DashboardPageState extends State<DashboardPage> {
                             ),
                             DataCell(
                               Text(
-                                item['supplier'] as String,
+                                item.supplier,
                                 style: const TextStyle(
                                   fontSize: 15,
                                   color: Color(0xFF6B7280),
@@ -916,7 +1273,7 @@ class _DashboardPageState extends State<DashboardPage> {
                             ),
                             DataCell(
                               Text(
-                                'AED ${yourPrice.toStringAsFixed(2)}',
+                                'AED ${item.yourPrice.toStringAsFixed(2)}',
                                 style: const TextStyle(
                                   fontSize: 15,
                                   color: Color(0xFF6B7280),
@@ -925,7 +1282,7 @@ class _DashboardPageState extends State<DashboardPage> {
                             ),
                             DataCell(
                               Text(
-                                'AED ${benchmarkPrice.toStringAsFixed(2)}',
+                                'AED ${item.benchmarkPrice.toStringAsFixed(2)}',
                                 style: const TextStyle(
                                   fontSize: 15,
                                   color: Color(0xFF6B7280),
@@ -939,21 +1296,23 @@ class _DashboardPageState extends State<DashboardPage> {
                                   vertical: 7,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: savingPercent > 20
-                                      ? const Color(0xFF10B981).withOpacity(0.1)
+                                  color: item.savingPercent > 20
+                                      ? const Color(
+                                          0xFF10B981,
+                                        ).withValues(alpha: 0.1)
                                       : const Color(
                                           0xFF08012D,
-                                        ).withOpacity(0.1),
+                                        ).withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     Text(
-                                      '${savingPercent.toStringAsFixed(0)}%',
+                                      '${item.savingPercent.toStringAsFixed(0)}%',
                                       style: TextStyle(
                                         fontSize: 15,
-                                        color: savingPercent > 20
+                                        color: item.savingPercent > 20
                                             ? const Color(0xFF10B981)
                                             : const Color(0xFF08012D),
                                         fontWeight: FontWeight.w600,
@@ -961,9 +1320,9 @@ class _DashboardPageState extends State<DashboardPage> {
                                     ),
                                     const SizedBox(width: 5),
                                     Icon(
-                                      Icons.arrow_downward,
+                                      Icons.south_rounded,
                                       size: 16,
-                                      color: savingPercent > 20
+                                      color: item.savingPercent > 20
                                           ? const Color(0xFF10B981)
                                           : const Color(0xFF08012D),
                                     ),
@@ -973,7 +1332,7 @@ class _DashboardPageState extends State<DashboardPage> {
                             ),
                             DataCell(
                               Text(
-                                'AED ${monthlySavings.toStringAsFixed(0)}',
+                                'AED ${item.monthlySavings.toStringAsFixed(0)}',
                                 style: const TextStyle(
                                   fontSize: 15,
                                   color: Color(0xFF10B981),
@@ -993,5 +1352,24 @@ class _DashboardPageState extends State<DashboardPage> {
         ],
       ),
     );
+  }
+
+  // Helper method to format date
+  String _formatDate(DateTime date) {
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    return '${months[date.month - 1]} ${date.day}, ${date.year}';
   }
 }

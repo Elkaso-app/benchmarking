@@ -5,8 +5,6 @@ import '../services/api_service.dart';
 import '../services/font_size_provider.dart';
 import 'upload_page.dart';
 import 'dashboard_page.dart';
-import 'reports_page.dart';
-import 'analytics_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -47,21 +45,11 @@ class _HomePageState extends State<HomePage>
   Widget _getSelectedPage() {
     switch (_selectedIndex) {
       case 0:
-        return DashboardPage(
-          onNavigateToUpload: () => _onNavigationTapped(1),
-          onNavigateToReports: () => _onNavigationTapped(2),
-        );
+        return DashboardPage(onNavigateToUpload: () => _onNavigationTapped(1));
       case 1:
         return const UploadPage();
-      case 2:
-        return const AnalyticsPage();
-      case 3:
-        return const ReportsPage();
       default:
-        return DashboardPage(
-          onNavigateToUpload: () => _onNavigationTapped(1),
-          onNavigateToReports: () => _onNavigationTapped(2),
-        );
+        return DashboardPage(onNavigateToUpload: () => _onNavigationTapped(1));
     }
   }
 
@@ -115,18 +103,6 @@ class _HomePageState extends State<HomePage>
                   label: 'Upload',
                   index: 1,
                 ),
-                const SizedBox(width: 8),
-                _buildTopNavItem(
-                  icon: Icons.analytics_rounded,
-                  label: 'Analytics',
-                  index: 2,
-                ),
-                const SizedBox(width: 8),
-                _buildTopNavItem(
-                  icon: Icons.lightbulb_outline_rounded,
-                  label: 'Ideas',
-                  index: 3,
-                ),
                 const Spacer(),
                 // Font Size Controls
                 _buildFontSizeControls(),
@@ -139,13 +115,13 @@ class _HomePageState extends State<HomePage>
                   ),
                   decoration: BoxDecoration(
                     color: _isBackendHealthy
-                        ? const Color(0xFF10B981).withOpacity(0.1)
-                        : const Color(0xFFEF4444).withOpacity(0.1),
+                        ? const Color(0xFF10B981).withValues(alpha: 0.1)
+                        : const Color(0xFFEF4444).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
                       color: _isBackendHealthy
-                          ? const Color(0xFF10B981).withOpacity(0.3)
-                          : const Color(0xFFEF4444).withOpacity(0.3),
+                          ? const Color(0xFF10B981).withValues(alpha: 0.3)
+                          : const Color(0xFFEF4444).withValues(alpha: 0.3),
                     ),
                   ),
                   child: Row(
@@ -181,7 +157,7 @@ class _HomePageState extends State<HomePage>
                   onPressed: _checkBackendHealth,
                   tooltip: 'Refresh connection',
                   style: IconButton.styleFrom(
-                    backgroundColor: Colors.white.withOpacity(0.1),
+                    backgroundColor: Colors.white.withValues(alpha: 0.1),
                     foregroundColor: Colors.white,
                   ),
                 ),
@@ -193,7 +169,7 @@ class _HomePageState extends State<HomePage>
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.1),
+                    color: Colors.white.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Row(
@@ -252,9 +228,9 @@ class _HomePageState extends State<HomePage>
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           decoration: BoxDecoration(
             color: isSelected
-                ? Colors.white.withOpacity(0.15)
+                ? Colors.white.withValues(alpha: 0.15)
                 : isHovered
-                ? Colors.white.withOpacity(0.1)
+                ? Colors.white.withValues(alpha: 0.1)
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(8),
             border: isSelected
@@ -273,7 +249,7 @@ class _HomePageState extends State<HomePage>
                 icon,
                 color: isSelected
                     ? Colors.white
-                    : Colors.white.withOpacity(0.7),
+                    : Colors.white.withValues(alpha: 0.7),
                 size: 20,
               ),
               const SizedBox(width: 8),
@@ -282,7 +258,7 @@ class _HomePageState extends State<HomePage>
                 style: TextStyle(
                   color: isSelected
                       ? Colors.white
-                      : Colors.white.withOpacity(0.7),
+                      : Colors.white.withValues(alpha: 0.7),
                   fontSize: 14,
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                 ),
@@ -300,7 +276,7 @@ class _HomePageState extends State<HomePage>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.1),
+        color: Colors.white.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
@@ -309,7 +285,7 @@ class _HomePageState extends State<HomePage>
           // Font size icon
           Icon(
             Icons.text_fields_rounded,
-            color: Colors.white.withOpacity(0.7),
+            color: Colors.white.withValues(alpha: 0.7),
             size: 18,
           ),
           const SizedBox(width: 8),
@@ -369,7 +345,7 @@ class _HomePageState extends State<HomePage>
           padding: const EdgeInsets.all(4),
           decoration: BoxDecoration(
             color: onPressed != null
-                ? Colors.white.withOpacity(0.15)
+                ? Colors.white.withValues(alpha: 0.15)
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(4),
           ),
@@ -377,7 +353,7 @@ class _HomePageState extends State<HomePage>
             icon,
             color: onPressed != null
                 ? Colors.white
-                : Colors.white.withOpacity(0.3),
+                : Colors.white.withValues(alpha: 0.3),
             size: 16,
           ),
         ),
