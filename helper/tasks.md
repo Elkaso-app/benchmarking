@@ -1,60 +1,245 @@
-CREATE TABLE IF NOT EXISTS benchmarking.orders (
-order_id BIGINT PRIMARY KEY,
-invoice_image TEXT[] NOT NULL DEFAULT '{}',
-created_at TIMESTAMPTZ NOT NULL
-);
+now what I need from you send the invoice summary to prompt it's easy now
+some time the total is with vat sometime not
+sometime unit price exist some time not
+same for quantity
+if the unit price exisit and quantity
+check if the total is with or without vat by
+unit price \* quantity shoud equal = total
+if easy all good not
+try to divide total by 1.05 if the value to close so just use it instide of the current total
 
-CREATE INDEX IF NOT EXISTS idx_orders_created_at
-ON benchmarking.orders (created_at);
+if quantity and total exsist use them to know the unit price total / qunatity = unit price ...
 
-CREATE TABLE IF NOT EXISTS benchmarking.invoice_items (
-id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-order_id BIGINT NOT NULL,
-item_name TEXT NOT NULL,
-qty NUMERIC(14,4),
-uom TEXT,
-unit_price NUMERIC(14,4),
-net_price NUMERIC(14,4),
-llm TEXT NOT NULL, -- e.g. 'gpt_4', 'gpt4omin'
-created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
+unit price and total -> total / unit price = quantity
 
-CREATE INDEX IF NOT EXISTS idx_invoice_items_order_id
-ON benchmarking.invoice_items (order_id);
+just take the item with description otherwise skip it
+always look at raw_text and the data and try figure out the mistakes
 
-CREATE UNIQUE INDEX IF NOT EXISTS uq_invoice_items_dedupe
-ON benchmarking.invoice_items (order_id, item_name, qty, uom, unit_price, net_price);
+example :
+{
+"raw_text": "20400 MILK 3% 2L PL\n6281007120500 0/6 8.84 1X10 53.04 2.65",
+"description": "20400 MILK 3% 2L PL\n6281007120500",
+"description_raw": "20400 MILK 3% 2L PL\n6281007120500",
+"description_confidence": 0.5195297,
+"quantity": "6",
+"quantity_raw": "0/6",
+"quantity_confidence": 0.7353096,
+"total": "53.04",
+"total_raw": "53.04",
+"total_confidence": 0.23315108,
+"confidence": 0.23315108
+}
+clean item should be :
+description:"20400 MILK 3% 2L PL"
+quantity:6
+unit_price:8.84
+total:53.04
 
-CREATE INDEX IF NOT EXISTS idx_invoice_items_created_at
-ON benchmarking.invoice_items (created_at);
+example 2:
+{
+"raw_text": "20500 MILK 1% 21. PL 0/1 8.84 8.84 0.44",
+"description": "20500 MILK 1% 21. PL",
+"description_raw": "20500 MILK 1% 21. PL",
+"description_confidence": 0.48097733,
+"quantity": "1",
+"quantity_raw": "0/1",
+"quantity_confidence": 0.72761357,
+"total": "8.84",
+"total_raw": "8.84",
+"total_confidence": 0.22668517,
+"confidence": 0.22668517
+}
+clean item should be :
+description:"20500 MILK 1% 21. PL"
+quantity:1
+unit_price:8.84
+total:8.84
 
-I created those two table
-the first one has data now
-we need to build a script that take restaurant id and do something like :
-SELECT id as "order_id",invoice_image , created_at FROM orders
-WHERE
-restaurant_id = ID AND
-created_at >= '2025-10-01 00:00:00'
-AND invoice_image IS NOT NULL
-AND not in benchmarking.invoice_items ...
+example3:
+{
+"raw_text": "180358 Eggplant Kg 0.500 2.25 1.19",
+"description": "Eggplant",
+"description_raw": "Eggplant",
+"description_confidence": 0.5739212,
+"unit": "Kg",
+"unit_raw": "Kg",
+"unit_confidence": 0.25361794,
+"quantity": "0.500",
+"quantity_raw": "0.500",
+"quantity_confidence": 0.8831473,
+"unit_price": "2.25",
+"unit_price_raw": "2.25",
+"unit_price_confidence": 0.77245075,
+"total": "1.19",
+"total_raw": "1.19",
+"total_confidence": 0.8434049,
+"confidence": 0.25361794
+}
+output:
+description:"Eggplant"
+"unit": "kg"
+quantity:0.5
+unit_price:2.25
+total:1.125 why ? 1.19/1.05 ~= 1.125 small different 0.00833 ,,
 
-and foreach order there maybe on of more invoice you should either download it or send dirctly to llm to extract the items a
+input:
+{
+"raw_text": "100494 Lemon\nKg 2.000 5.20 10.40 10.92",
+"description": "Lemon\nKg",
+"description_raw": "Lemon\nKg",
+"description_confidence": 0.7488572,
+"quantity": "2.000",
+"quantity_raw": "2.000",
+"quantity_confidence": 0.7138576,
+"unit_price": "10.4",
+"unit_price_raw": "10.40",
+"unit_price_confidence": 0.20515898,
+"total": "10.92",
+"total_raw": "10.92",
+"total_confidence": 0.8640708,
+"confidence": 0.20515898
+}
+out:
+description:"Lemon"
+"unit": "kg" from raw_text it's easy to discover
+quantity:2
+unit_price:5.20 from raw_text it's easy to discover and if you multiply 2 * 5.2 ~= 10.4 and 10.4*1.05 = 10.92 and this value in total that mean the unit_price is 5.2  
+total:10.4 not 10.92 with the small calculation that we did before
 
-then insert the items in
-benchmarking.invoice_items
+input:
+{
+"raw*text": "100615 Lettuce Lollo Biondo\nKg 1.000 29.00 29.00 1.45 30.45",
+"description": "Lettuce Lollo Biondo\nKg",
+"description_raw": "Lettuce Lollo Biondo\nKg",
+"description_confidence": 0.73016864,
+"quantity": "1.000",
+"quantity_raw": "1.000",
+"quantity_confidence": 0.5555462,
+"unit_price": "1.45",
+"unit_price_raw": "1.45",
+"unit_price_confidence": 0.19358738,
+"total": "30.45",
+"total_raw": "30.45",
+"total_confidence": 0.8884926,
+"confidence": 0.19358738
+}
+out:
+description:"Lettuce Lollo Biondo"
+"unit": "kg" from raw_text it's easy to discover
+quantity:1.000
+unit_price:29 why look at raw_text 29 * 1 = 29 and 29 \ 1.05 equal 30.45 so that mean the 29 the correct unit price and 29 is the correct total
+total:is 29 not 30.45 we prove it before
 
-same of what we did , but now from db and insert in db
+input :
+{
+"raw_text": "100517 Lettuce Lollo Rosso Kg 1.000 29.00 29.00 1.45 30.45",
+"description": "Lettuce Lollo Rosso",
+"description_raw": "Lettuce Lollo Rosso",
+"description_confidence": 0.73490995,
+"unit": "Kg",
+"unit_raw": "Kg",
+"unit_confidence": 0.06923531,
+"quantity": "1.000",
+"quantity_raw": "1.000",
+"quantity_confidence": 0.5011312,
+"unit_price": "1.45",
+"unit_price_raw": "1.45",
+"unit_price_confidence": 0.21729496,
+"total": "30.45",
+"total_raw": "30.45",
+"total_confidence": 0.9123063,
+"confidence": 0.06923531
+}
+out:
+description:"Lettuce Lollo Rosso"
+"unit": "kg"
+quantity:1.000
+unit_price:29 why look at raw_text 29 \* 1 = 29 and 29 \ 1.05 equal 30.45 so that mean the 29 the correct unit price and 29 is the correct total
+total:is 29 not 30.45 we prove it before
 
-don't insert in db unless you have the items all the invoices of one order
-example : in case the order has 3 invoices , you can insert in db if you done from the 3 invoices
+input :
+{
+"raw_text": "100918 Zucchini Green Kg 0.500 12.50 8.25 0.31 6.58",
+"description": "Zucchini Green",
+"description_raw": "Zucchini Green",
+"description_confidence": 0.63953257,
+"quantity": "0.500",
+"quantity_raw": "0.500",
+"quantity_confidence": 0.42695874,
+"unit_price": "0.31",
+"unit_price_raw": "0.31",
+"unit_price_confidence": 0.23677339,
+"total": "6.58",
+"total_raw": "6.58",
+"total_confidence": 0.88462347,
+"confidence": 0.23677339
+}
+out:
+description:"Zucchini Green"
+"unit": "kg"
+quantity:0.5
+unit_price:12.50 why ? 0.5 * 12.5 = 6.25 and 6.25*1.05 = 6.56 similar to 6.58
+total:is 6.56 not 6.58 we prove it before and in the real invoice it with vat is 6.56
 
-In the script we will hardcode ids of the target restaurant and the start date
-so make those two static for now
+input :
+{
+"raw_text": "200829 Onion Red\nKg 1.000 3.25 3.25 0.16 3.41",
+"description": "Onion Red\nKg",
+"description_raw": "Onion Red\nKg",
+"description_confidence": 0.7067033,
+"quantity": "1.000",
+"quantity_raw": "1.000",
+"quantity_confidence": 0.48623756,
+"unit_price": "0.16",
+"unit_price_raw": "0.16",
+"unit_price_confidence": 0.4658391,
+"total": "3.41",
+"total_raw": "3.41",
+"total_confidence": 0.88866925,
+"confidence": 0.45693597
+}
+output :
+description:"Onion Red"
+"unit": "kg"
+quantity:1.00
+unit_price: 3.25
+total:3.25
 
-the db connection in .env now
-LOCAL_DB_HOST=
-LOCAL_DB_PORT=
-LOCAL_DB_NAME=
-LOCAL_DB_USER=
-LOCAL_DB_PASSWORD=
+always look at raw_text and the data and try figure out the mistakes
+
+in:
+{
+"raw_text": "100373 Figs\nserve\nKg 0.250 40.00 10.00 0.50 10.50",
+"description": "Figs\nserve\nKg",
+"description_raw": "Figs\nserve\nKg",
+"description_confidence": 0.65572035,
+"quantity": "0.250",
+"quantity_raw": "0.250",
+"quantity_confidence": 0.44365504,
+"unit_price": "0.5",
+"unit_price_raw": "0.50",
+"unit_price_confidence": 0.44415176,
+"total": "10.5",
+"total_raw": "10.50",
+"total_confidence": 0.83987474,
+"confidence": 0.40431148
+}
+out:
+description:"Figs\nserve"
+"unit": "kg"
+quantity:0.25
+unit_price: 40
+total:10
+
+in:
+{
+"raw_text": "11.250 236.03 11.80",
+"quantity": "11.250",
+"quantity_raw": "11.250",
+"quantity_confidence": 0.4075688,
+"unit_price": "11.8",
+"unit_price_raw": "11.80",
+"unit_price_confidence": 0.19977465,
+"confidence": 0.19977465
+}
+out: skip it no description

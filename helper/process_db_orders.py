@@ -82,6 +82,7 @@ def fetch_unprocessed_orders(conn) -> List[Dict]:
         o.created_at
     FROM benchmarking.orders o
     WHERE 
+        o.order_id in (2901310 , 2928400) AND
         o.restaurant_id = ANY(%s)
         AND o.created_at >= %s
         AND o.invoice_image IS NOT NULL

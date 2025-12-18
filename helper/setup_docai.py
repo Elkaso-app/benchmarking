@@ -82,3 +82,4 @@ def fetch_processor_types(project_id: str, location: str):
     except Exception as e:
         print(f"❌ Error fetching processor types: {e}")
 
+
