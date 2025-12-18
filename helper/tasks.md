@@ -243,3 +243,53 @@ in:
 "confidence": 0.19977465
 }
 out: skip it no description
+
+{
+"raw_text": "10303711 AU CH 150 GF BEEF KG TENDERLOIN ANGUS PURE 2.620 85.00 233.84",
+"description": "AU CH 150 GF BEEF\nTENDERLOIN ANGUS PURE",
+"description_raw": "AU CH 150 GF BEEF\nTENDERLOIN ANGUS PURE",
+"description_confidence": 0.8225606,
+"unit": "KG",
+"unit_raw": "KG",
+"unit_confidence": 0.8737863,
+"quantity": "2.620",
+"quantity_raw": "2.620",
+"quantity_confidence": 0.97389424,
+"unit_price": "85",
+"unit_price_raw": "85.00",
+"unit_price_confidence": 0.9644133,
+"total": "233.84",
+"total_raw": "233.84",
+"total_confidence": 0.8248089,
+"confidence": 0.6189575
+}
+description:"AU CH 150 GF BEEF\nTENDERLOIN ANGUS PURE"
+"unit": "kg"
+quantity:2.62
+unit_price: 85
+total:222.7
+
+in:
+{
+"raw_text": "3 10403516 TH FZ TUNA SAKU AA NW\n300-600G OG KG Frozen 0.960 73.00 70.08 3.50 73.58",
+"description": "TH FZ TUNA SAKU AA NW\n300-600G OG",
+"description_raw": "TH FZ TUNA SAKU AA NW\n300-600G OG",
+"description_confidence": 0.7150697,
+"quantity": "0.960",
+"quantity_raw": "0.960",
+"quantity_confidence": 0.67033666,
+"unit_price": "73",
+"unit_price_raw": "73.00",
+"unit_price_confidence": 0.6798397,
+"total": "73.58",
+"total_raw": "73.58",
+"total_confidence": 0.96534574,
+"confidence": 0.50875837
+}
+description:"AU CH 150 GF BEEF\nTENDERLOIN ANGUS PURE"
+"unit": "kg"
+quantity:0.960
+unit_price: 73
+total:70.08
+
+in general you need to look at the json of the item and try to figure out the correctness
