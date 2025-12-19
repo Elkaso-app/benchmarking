@@ -3,9 +3,10 @@ import base64
 import time
 import json
 from pathlib import Path
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Dict, Any
 import statistics
 from io import BytesIO
+import re
 import fitz  # PyMuPDF
 
 from anthropic import Anthropic
@@ -176,6 +177,236 @@ Important:
         # Parse and validate
         data = json.loads(json_str)
         return InvoiceData(**data)
+
+    def _call_claude_json(self, prompt: str, max_tokens: int = 4096) -> Any:
+        """
+        Call Claude with a text-only prompt and return parsed JSON.
+        """
+        message = self.client.messages.create(
+            model=self.model,
+            max_tokens=max_tokens,
+            temperature=0,
+            messages=[{"role": "user", "content": [{"type": "text", "text": prompt}]}],
+        )
+
+        result_text = "".join(
+            block.text for block in message.content if getattr(block, "type", None) == "text"
+        ).strip()
+
+        json_str = result_text.strip()
+        if json_str.startswith("```json"):
+            json_str = json_str[7:]
+        if json_str.startswith("```"):
+            json_str = json_str[3:]
+        if json_str.endswith("```"):
+            json_str = json_str[:-3]
+        json_str = json_str.strip()
+
+        def _extract_first_json(text: str) -> str:
+            # Find first JSON object/array and return that slice.
+            start = None
+            opening = None
+            for i, ch in enumerate(text):
+                if ch == "{" or ch == "[":
+                    start = i
+                    opening = ch
+                    break
+            if start is None or opening is None:
+                return text
+
+            closing = "}" if opening == "{" else "]"
+            depth = 0
+            in_str = False
+            esc = False
+            for j in range(start, len(text)):
+                c = text[j]
+                if in_str:
+                    if esc:
+                        esc = False
+                        continue
+                    if c == "\\":
+                        esc = True
+                        continue
+                    if c == "\"":
+                        in_str = False
+                    continue
+
+                if c == "\"":
+                    in_str = True
+                    continue
+                if c == opening:
+                    depth += 1
+                elif c == closing:
+                    depth -= 1
+                    if depth == 0:
+                        return text[start : j + 1]
+            return text[start:]
+
+        snippet = _extract_first_json(json_str)
+        return json.loads(snippet)
+
+    def create_docai_clean_prompt(self, invoice_summary: Dict[str, Any]) -> str:
+        """
+        Build the prompt that converts Google DocAI line_items into cleaned line items.
+
+        Rules come from helper/tasks.md:
+        - Keep ONLY items with a real description, otherwise SKIP.
+        - VAT is often 5%: if totals look VAT-inclusive, compute net_total = gross_total / 1.05.
+        - Infer missing unit_price/quantity when possible.
+        - Use raw_text heavily to recover correct numbers when DocAI picked VAT amount or wrong column.
+        """
+        # Keep the prompt deterministic and short; the model gets the structured JSON.
+        return f"""You are an expert invoice line-item cleaner.
+
+Input is a JSON object produced from Google Document AI INVOICE_PROCESSOR. It contains:
+- invoice metadata (invoice_number, invoice_date, vendor_name, customer_name, currency, total_amount)
+- line_items: array of objects with fields such as:
+  raw_text, description, unit, quantity, unit_price, total
+  plus *_raw and *_confidence for each field.
+
+Your job: return ONLY a valid JSON object with this structure:
+{{
+  "items": [
+    {{
+      "description": "string (cleaned)",
+      "unit": "string or null",
+      "quantity": number or null,
+      "unit_price": number or null,
+      "total": number or null,  // NET total (before VAT)
+      "llm_confidence": number  // 0..10
+    }}
+  ]
+}}
+
+Cleaning rules (VERY IMPORTANT):
+- If an item has no usable description, SKIP it entirely.
+- Always use raw_text to fix mistakes (DocAI may confuse VAT amount or pick the wrong number).
+- VAT logic (assume 5% when applicable):
+  - If qty and unit_price exist, compute net = qty * unit_price.
+    - If net ~= total (within 0.05), then total is net.
+    - Else if net*1.05 ~= total (within 0.10), then total is gross; set total = net (net before VAT).
+    - Else if total/1.05 ~= net (within 0.10), treat total as gross; set total = net.
+  - If only (qty,total) exist and total seems gross, try net = total/1.05 when it makes math consistent.
+- If quantity and total exist but unit_price missing: unit_price = total / quantity (total must be net).
+- If unit_price and total exist but quantity missing: quantity = total / unit_price (total must be net).
+- Normalize unit to lowercase (e.g., \"Kg\" -> \"kg\").
+- Keep numeric values as numbers (not strings). Prefer 3 decimals for qty when needed.
+- llm_confidence:
+  - 9-10 if everything is consistent and clearly supported by raw_text
+  - 7-8 if some inference was required but still consistent
+  - <7 if uncertain; if <7 and key numbers are uncertain, SKIP instead.
+
+Input JSON:
+{json.dumps(invoice_summary, ensure_ascii=False)}
+"""
+
+    def create_docai_line_item_clean_prompt(self, docai_item: Dict[str, Any]) -> str:
+        """
+        Clean a single DocAI line_item dict into one cleaned item (or skip).
+        This is used when we want to store google_json per DB row.
+        """
+        raw_text = (docai_item.get("raw_text") or "").strip()
+        # Numeric tokens from raw_text help spot "net/vat/gross" patterns and ignore row numbers.
+        # We keep tail only to avoid huge prompts.
+        raw_numbers = [m.group(0) for m in re.finditer(r"(?<![\\w/])\\d+(?:\\.\\d+)?", raw_text)]
+        raw_numbers_tail = raw_numbers[-10:]
+
+        return f"""You are an expert invoice line-item cleaner.
+
+Input is ONE line item extracted by Google Document AI INVOICE_PROCESSOR with:
+- raw_text
+- description/unit/quantity/unit_price/total (may be wrong)
+- *_raw and *_confidence fields
+
+Return ONLY a valid JSON object with one of these shapes:
+
+1) Cleaned item:
+{{
+  "description": "string (cleaned)",
+  "unit": "string or null",
+  "quantity": number or null,
+  "unit_price": number or null,
+  "total": number or null,  // NET total (before VAT)
+  "llm_confidence": number  // 0..10
+}}
+
+2) Skip:
+{{ "skip": true }}
+
+Rules:
+- If there is no real product description, return {{\"skip\": true}}.
+- Use raw_text to recover correct numbers.
+- IMPORTANT: raw_text may start with row numbers / item codes (e.g. \"7 1093 ...\", \"10 1107 ...\", \"20 1504 ...\").
+  These leading integers are NOT quantities. Prefer quantity values that appear near the unit (KG) and often have decimals (e.g. 0.100, 1.000).
+- VAT: try to detect 5% VAT:
+  - If (qty * unit_price) ~= total => total is net.
+  - Else if (qty * unit_price)*1.05 ~= total => total is gross; set total = qty * unit_price (net).
+  - Else if total/1.05 ~= qty*unit_price => treat total as gross; set total = qty*unit_price (net).
+  - If unit_price seems to be VAT amount (small) but raw_text contains another plausible unit price that makes math work, use it.
+- If raw_text contains BOTH net and gross totals (common pattern: \"... net vat gross\"), always output total = net (before VAT).
+- Infer missing:
+  - If qty and total exist: unit_price = total/qty (total must be net).
+  - If unit_price and total exist: quantity = total/unit_price (total must be net).
+- Normalize unit to lowercase if present (Kg -> kg).
+- Output numeric types, not strings.
+- Prefer to keep description without embedded barcode lines (remove pure numeric barcode lines).
+- Prefer to clean description by removing trailing unit markers like \"- KG\" and standalone \"KG\" lines (unit goes to the unit field).
+
+Helpful extracted info from raw_text:
+- raw_numbers_tail: {json.dumps(raw_numbers_tail, ensure_ascii=False)}
+
+Input JSON:
+{json.dumps(docai_item, ensure_ascii=False)}
+"""
+
+    def clean_item_from_docai_line_item(self, docai_item: Dict[str, Any]) -> Optional[InvoiceItem]:
+        prompt = self.create_docai_line_item_clean_prompt(docai_item)
+        data = self._call_claude_json(prompt=prompt, max_tokens=1200)
+        if not isinstance(data, dict):
+            return None
+        if data.get("skip") is True:
+            return None
+        desc = (data.get("description") or "").strip()
+        if not desc:
+            return None
+        unit = data.get("unit")
+        if isinstance(unit, str):
+            unit = unit.strip() or None
+        return InvoiceItem(
+            item_number=None,
+            description=desc,
+            quantity=float(data["quantity"]) if data.get("quantity") is not None else None,
+            unit_price=float(data["unit_price"]) if data.get("unit_price") is not None else None,
+            total=float(data["total"]) if data.get("total") is not None else None,
+            unit=unit,
+            llm_confidence=float(data["llm_confidence"]) if data.get("llm_confidence") is not None else None,
+        )
+
+    def clean_items_from_docai_summary(self, invoice_summary: Dict[str, Any]) -> List[InvoiceItem]:
+        """
+        Convert DocAI invoice summary into cleaned InvoiceItem list using Claude (text-only).
+        """
+        prompt = self.create_docai_clean_prompt(invoice_summary)
+        data = self._call_claude_json(prompt=prompt, max_tokens=4096)
+        raw_items = (data or {}).get("items") or []
+
+        cleaned: List[InvoiceItem] = []
+        for it in raw_items:
+            desc = (it.get("description") or "").strip()
+            if not desc:
+                continue
+            cleaned.append(
+                InvoiceItem(
+                    item_number=None,
+                    description=desc,
+                    quantity=float(it["quantity"]) if it.get("quantity") is not None else None,
+                    unit_price=float(it["unit_price"]) if it.get("unit_price") is not None else None,
+                    total=float(it["total"]) if it.get("total") is not None else None,
+                    unit=(it.get("unit") or None),
+                    llm_confidence=float(it["llm_confidence"]) if it.get("llm_confidence") is not None else None,
+                )
+            )
+        return cleaned
 
     def _normalize_and_filter_items(self, invoice_data: InvoiceData) -> InvoiceData:
         """

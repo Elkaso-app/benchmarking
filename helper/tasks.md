@@ -293,3 +293,36 @@ unit_price: 73
 total:70.08
 
 in general you need to look at the json of the item and try to figure out the correctness
+
+also in invoice_items table I added a new column named google_json with type json the value of it should a the json from google of the item like the input so I can later review the results
+
+feedback :
+in :
+{"raw_text": "7 1093 CHIVES - KG\nKG 0.100 58.000 5.800 0.290 6.090", "description": "CHIVES - KG\nKG", "description_raw": "CHIVES - KG\nKG", "description_confidence": 0.77240634, "quantity": "0.100", "quantity_raw": "0.100", "quantity_confidence": 0.62956476, "unit_price": "58.000", "unit_price_raw": "58.000", "unit_price_confidence": 0.35712343, "total": "6.090", "total_raw": "6.090", "total_confidence": 0.9450208, "confidence": 0.35712343}
+out:
+"description" : "CHIVES"
+"unit": "kg"
+quantity:0.100
+unit_price: 58
+total:5.8
+check output from db id of item = "7cac064f-69f6-425e-ac41-384fc5eb0a43" not correct
+
+in:
+{"raw_text": "10 1107 CUCUMBER HOLLAND-KG\nKG 1.000 16.000 16.000 0.800 16.800", "quantity": "10", "quantity_raw": "10", "quantity_confidence": 0.5109158, "description": "CUCUMBER HOLLAND-KG\nKG", "description_raw": "CUCUMBER HOLLAND-KG\nKG", "description_confidence": 0.8355957, "unit_price": "16.000", "unit_price_raw": "16.000", "unit_price_confidence": 0.57950854, "total": "16.800", "total_raw": "16.800", "total_confidence": 0.89002347, "confidence": 0.5109158}
+out:
+"description" : "CUCUMBER HOLLAND"
+"unit": "kg"
+quantity:1.0
+unit_price: 16.0
+total:16
+check output from db id of item = "c2fd85c-3795-41e3-8e21-d18430f9a3a4"
+
+in:
+{"raw_text": "20 1504 STRAWBERRY IMPORTED - KG\nKG 1.000 48.000 2.400 50.400", "quantity": "20", "quantity_raw": "20", "quantity_confidence": 0.69558775, "description": "STRAWBERRY IMPORTED - KG\nKG", "description_raw": "STRAWBERRY IMPORTED - KG\nKG", "description_confidence": 0.8542387, "unit_price": "48.000", "unit_price_raw": "48.000", "unit_price_confidence": 0.7660722, "total": "50.400", "total_raw": "50.400", "total_confidence": 0.8937623, "confidence": 0.6316924}
+out:
+"description" : "STRAWBERRY IMPORTED"
+"unit": "kg"
+quantity:1.0
+unit_price: 48.0
+total:48
+check output from db id of item = "878fb92d-f3b4-49b6-9512-bd217bef07bd"

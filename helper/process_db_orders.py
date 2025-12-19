@@ -16,20 +16,24 @@ import os
 import sys
 import psycopg2
 from psycopg2 import sql
-from psycopg2.extras import execute_batch
+from psycopg2.extras import execute_batch, Json
 import requests
 import tempfile
 from pathlib import Path
 from datetime import datetime
-from typing import List, Dict, Optional, Tuple
+from typing import List, Dict, Optional, Tuple, Any
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dotenv import load_dotenv
 
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
+# Add helper directory for docai client import
+sys.path.insert(0, str(Path(__file__).parent))
 
 from invoice_processor import InvoiceProcessor
 from models import InvoiceData, InvoiceItem
+from config import settings
+from docai_client import process_document_bytes, guess_mime_from_name
 
 # Load environment variables
 load_dotenv()
@@ -82,7 +86,6 @@ def fetch_unprocessed_orders(conn) -> List[Dict]:
         o.created_at
     FROM benchmarking.orders o
     WHERE 
-        o.order_id in (2901310 , 2928400) AND
         o.restaurant_id = ANY(%s)
         AND o.created_at >= %s
         AND o.invoice_image IS NOT NULL
@@ -131,15 +134,16 @@ def insert_invoice_items(conn, order_id: int, items: List[InvoiceItem], llm_mode
     
     insert_query = """
     INSERT INTO benchmarking.invoice_items 
-        (order_id, item_name, qty, uom, unit_price, net_price, llm, llm_confidence, created_at, updated_at)
+        (order_id, item_name, qty, uom, unit_price, net_price, llm, llm_confidence, google_json, created_at, updated_at)
     VALUES 
-        (%s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
+        (%s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
     ON CONFLICT (order_id, item_name, qty, uom, unit_price, net_price) 
     DO NOTHING
     """
     
     values = []
     for item in items:
+        google_json = getattr(item, "__google_json__", None)
         values.append((
             order_id,
             item.description or '',
@@ -149,6 +153,7 @@ def insert_invoice_items(conn, order_id: int, items: List[InvoiceItem], llm_mode
             float(item.total) if item.total else None,
             llm_model,
             float(getattr(item, "llm_confidence", None)) if getattr(item, "llm_confidence", None) is not None else None,
+            Json(google_json) if google_json is not None else None,
         ))
     
     with conn.cursor() as cur:
@@ -282,8 +287,7 @@ def process_single_order(
     if not invoice_urls:
         return (order_id, 0, "No invoice images found")
     
-    all_items = []
-    temp_files = []
+    all_items: List[InvoiceItem] = []
     
     try:
         # Process each invoice
@@ -297,29 +301,39 @@ def process_single_order(
             
             file_bytes, extension = result
             print(f"      📎 File type: {extension.upper()}")
-            
-            # Save to temp file
-            temp_path = save_temp_file(file_bytes, extension)
-            if not temp_path:
-                return (order_id, 0, f"Failed to save invoice {idx} to temp file")
-            
-            temp_files.append(temp_path)
-            
-            # Process with LLM
-            print(f"      🤖 Processing with {processor.model}...")
-            result = processor.process_invoice(temp_path)
-            
-            if not result.success:
-                error_msg = result.error or "Unknown error"
-                return (order_id, 0, f"LLM processing failed for invoice {idx}: {error_msg}")
-            
-            if not result.invoice_data or not result.invoice_data.items:
-                print(f"      ⚠️  No items extracted from invoice {idx}")
+
+            # 1) Scan invoice with Google Document AI
+            print(f"      🔎 Scanning with Google Document AI...")
+            mime_type = guess_mime_from_name(f"invoice.{extension}")
+            _, summary = process_document_bytes(
+                project_id=(settings.google_cloud_project or os.getenv("GOOGLE_CLOUD_PROJECT") or os.getenv("GCP_PROJECT") or ""),
+                location=(settings.docai_location or os.getenv("DOCAI_LOCATION", "us")),
+                processor_id=(settings.docai_processor_id or os.getenv("DOCAI_PROCESSOR_ID") or ""),
+                processor_version_id=(settings.docai_processor_version_id or os.getenv("DOCAI_PROCESSOR_VERSION_ID") or None),
+                content=file_bytes,
+                mime_type=mime_type,
+            )
+
+            docai_items: List[Dict[str, Any]] = (summary or {}).get("line_items") or []
+            if not docai_items:
+                print(f"      ⚠️  No DocAI line_items found for invoice {idx}")
                 continue
-            
-            items_count = len(result.invoice_data.items)
-            print(f"      ✅ Extracted {items_count} items")
-            all_items.extend(result.invoice_data.items)
+
+            # 2) Clean each DocAI line_item using Claude (text-only)
+            print(f"      🧹 Cleaning {len(docai_items)} DocAI items with {processor.model}...")
+            cleaned_count = 0
+            for gi in docai_items:
+                if not (gi.get("description") or gi.get("description_raw")):
+                    continue
+                cleaned = processor.clean_item_from_docai_line_item(gi)
+                if cleaned is None:
+                    continue
+                # Attach google_json for DB insertion (not part of Pydantic model)
+                setattr(cleaned, "__google_json__", gi)
+                all_items.append(cleaned)
+                cleaned_count += 1
+
+            print(f"      ✅ Cleaned {cleaned_count} items from invoice {idx}")
         
         # Check if we got any items
         if not all_items:
@@ -344,15 +358,7 @@ def process_single_order(
         error_msg = f"Unexpected error: {str(e)}"
         print(f"   ❌ {error_msg}")
         return (order_id, 0, error_msg)
-    
-    finally:
-        # Clean up temp files
-        for temp_file in temp_files:
-            try:
-                if temp_file.exists():
-                    temp_file.unlink()
-            except:
-                pass
+
 
 
 # ==================== MAIN EXECUTION ====================
